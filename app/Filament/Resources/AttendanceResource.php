@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AttendanceResource\Pages;
 use App\Filament\Resources\AttendanceResource\RelationManagers;
 use App\Models\Attendance;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -79,7 +80,8 @@ class AttendanceResource extends Resource
             ->columns([
                 //
                 TextColumn::make('user.name')
-                    ->label('Nama Karyawan'),
+                    ->label('Nama Karyawan')
+                    ->searchable(),
                 TextColumn::make('tanggal')->label('Tanggal Kehadiran'),
                 TextColumn::make('jam_masuk')->label('Jam Masuk'),
                 TextColumn::make('status')->label('Status Kehadiran'),
@@ -93,6 +95,12 @@ class AttendanceResource extends Resource
             })
             ->filters([
                 //
+                SelectFilter::make('status')
+                    ->options([
+                        'hadir' => 'Hadir',
+                        'izin' => 'Izin',
+                        'sakit' => 'Sakit',
+                    ])
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

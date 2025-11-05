@@ -21,7 +21,9 @@ class CreateOvertimeEmployee extends CreateRecord
         $count = DB::table('overtime_employees')
             ->where('user_id', auth()->id())
             ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+            ->where('status', 'success')
             ->count();
+
 
         if ($count >= 3) {
             Notification::make()
