@@ -24,7 +24,6 @@ class CreateOvertimeEmployee extends CreateRecord
             ->where('status', 'success')
             ->count();
 
-
         if ($count >= 3) {
             Notification::make()
                 ->title('Gagal mengajukan lembur')

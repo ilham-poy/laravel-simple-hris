@@ -21,6 +21,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Notifications\Notification;
 
 class OvertimeEmployeeResource extends Resource
 {
@@ -72,7 +73,7 @@ class OvertimeEmployeeResource extends Resource
                             // Default: tampilkan semua
                             return $query;
                         }
-                    )
+                    )->required()
                     ->visible(fn() => !Auth::user()->hasRole('super admin')),
                 Select::make('total_lembur')
                     ->label('Berapa Jam Lembur')
@@ -101,7 +102,7 @@ class OvertimeEmployeeResource extends Resource
                 TextColumn::make('tanggal')->label('Tanggal Lembur'),
                 TextColumn::make('total_lembur')->label('Total Jam Lembur'),
                 TextColumn::make('status')->label('Status Lembur'),
-            ])->modifyQueryUsing(function (Builder $query) {
+            ])->defaultSort('tanggal', 'desc')->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 if ($user->hasRole('employee')) {
                     $query->where('user_id', $user->id);
@@ -123,8 +124,41 @@ class OvertimeEmployeeResource extends Resource
                             $record->status !== 'success' && $record->status !== 'failed'
                     )
                     ->action(function ($record) {
+
+                        $userId   = $record->user_id;
+                        $tanggal  = $record->tanggal;
+                        $startOfWeek = \Carbon\Carbon::parse($tanggal)->startOfWeek();
+                        $endOfWeek   = \Carbon\Carbon::parse($tanggal)->endOfWeek();
+
+                        // Hitung lembur success minggu ini
+                        $count = DB::table('overtime_employees')
+                            ->where('user_id', $userId)
+                            ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+                            ->where('status', 'success')
+                            ->count();
+
+                        // Jika sudah 3 → otomatis reject
+                        if ($count >= 3) {
+
+                            $record->status = 'failed';
+                            $record->save();
+
+                            Notification::make()
+                                ->title('Lembur otomatis ditolak')
+                                ->body('Karyawan ini sudah memiliki 3 lembur minggu ini.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $record->status = 'success';
                         $record->save();
+
+                        Notification::make()
+                            ->title("Lembur berhasil di-accept")
+                            ->success()
+                            ->send();
                     }),
                 Action::make('reject')
                     ->label('Reject')

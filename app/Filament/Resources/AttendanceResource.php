@@ -20,6 +20,7 @@ use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\Notification;
 
 class AttendanceResource extends Resource
 {
@@ -55,12 +56,15 @@ class AttendanceResource extends Resource
                             // Default: tampilkan semua
                             return $query;
                         }
-                    )
+                    )->required()
                     ->visible(fn() => !Auth::user()->hasRole('super admin')),
-
-                DatePicker::make('tanggal'),
-                TimePicker::make('jam_masuk')->label('Jam Masuk'),
-
+                DatePicker::make('tanggal')
+                    ->required()
+                    ->minDate(today())
+                    ->maxDate(today()),
+                Forms\Components\Hidden::make('jam_masuk')
+                    ->default(now()->format('H:i:s'))
+                    ->dehydrated(true),
                 TextInput::make('durasi_keterlambatan')->label('Durasi Keterlambatan (Gunakan Satuan Menit)'),
                 Select::make('status')
                     ->options([
