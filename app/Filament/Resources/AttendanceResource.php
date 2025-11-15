@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
+use Carbon\Carbon;
+use Filament\Forms\Components\Hidden;
 
 class AttendanceResource extends Resource
 {
@@ -29,12 +31,11 @@ class AttendanceResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
 
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-
-                //
 
                 Select::make('user_id')
                     ->relationship(
@@ -62,18 +63,24 @@ class AttendanceResource extends Resource
                     ->required()
                     ->minDate(today())
                     ->maxDate(today()),
-                Forms\Components\Hidden::make('jam_masuk')
-                    ->default(now()->format('H:i:s'))
-                    ->dehydrated(true),
+
                 TextInput::make('durasi_keterlambatan')->label('Durasi Keterlambatan (Gunakan Satuan Menit)'),
+                Forms\Components\Hidden::make('jam_masuk')
+                    ->default(
+                        Carbon::now('Asia/Jakarta')->format('H:i:s')
+                    )
+                    ->dehydrated(true),
                 Select::make('status')
                     ->options([
                         'hadir' => 'Hadir',
-                        'izin' => 'Izin',
+                        'izin'  => 'Izin',
                         'sakit' => 'Sakit',
                         'telat' => 'Telat',
                         'alpha' => 'Tidak Hadir',
-                    ])->label('Status Kehadiran')->required(),
+                    ])
+                    ->label('Status Kehadiran')
+                    ->required()
+                    ->dehydrated(true),
                 Textarea::make('keterangan')->label('Keterangan'),
             ]);
     }
