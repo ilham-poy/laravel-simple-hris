@@ -17,7 +17,7 @@ class CreateAttendance extends CreateRecord
         $start = Carbon::createFromTime(8, 0, 0, 'Asia/Jakarta');
         $end   = Carbon::createFromTime(8, 30, 0, 'Asia/Jakarta');
 
-        if (!$jamMasuk->between($start, $end)) {
+        if (!$jamMasuk->between($start, $end) && $data['status'] == 'hadir') {
             $data['status'] = 'telat';
         }
 

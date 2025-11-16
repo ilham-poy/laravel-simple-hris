@@ -57,6 +57,7 @@ class RolePermissionSeeder extends Seeder
         Role::create(['name' => 'super-admin']);
         Role::create(['name' => 'hrd-officer']);
         Role::create(['name' => 'employee']);
+        Role::create(['name' => 'access-denied']);
 
         $roleSuperAdmin =  Role::findByName('super-admin');
         $roleHrdOfficer =  Role::findByName('hrd-officer');

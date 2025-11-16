@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use App\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\User;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ManageEmployeeResource extends Resource
@@ -84,8 +85,27 @@ class ManageEmployeeResource extends Resource
                     ->relationship(
                         name: 'user',
                         titleAttribute: 'name',
-                    ),
-                TextInput::make('email_kantor')->label('Email Kantor')->email()->required(),
+                        modifyQueryUsing: fn($query) =>
+                        $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'super-admin'))
+                    )
+                    ->label('Nama Karyawan')
+                    ->required()
+                    ->reactive() // penting supaya bisa trigger perubahan
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            $user = User::find($state);
+                            if ($user) {
+                                $set('email_kantor', $user->email); // isi otomatis field email_kantor
+                            }
+                        }
+                    }),
+
+                TextInput::make('email_kantor')
+                    ->label('Email Kantor')
+                    ->email()
+                    ->required()
+                    ->disabled()
+                    ->dehydrated(true),
                 TextInput::make('email_pribadi')->label('Email Pribadi')->email()->required(),
                 TextInput::make('no_hp')->label('Nomor Hp')->required(),
                 TextInput::make('no_keluarga_1')->label('Nomor Hp Keluarga 1')->required(),
