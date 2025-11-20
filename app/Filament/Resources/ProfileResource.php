@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\User;
 
 class ProfileResource extends Resource
 {
@@ -28,6 +29,10 @@ class ProfileResource extends Resource
     public static function getModelLabel(): string
     {
         return 'Profile';
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public static function getPluralModelLabel(): string

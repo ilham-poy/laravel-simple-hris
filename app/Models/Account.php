@@ -8,11 +8,10 @@ use Spatie\Permission\Traits\HasRoles;
 class Account extends Model
 {
     //
-
     use HasRoles;
     protected $fillable = [
         'name',
-        'email',
+        'status',
         'jabatan',
         'keterangan'
     ];

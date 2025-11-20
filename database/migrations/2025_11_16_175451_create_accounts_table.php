@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email');
+            $table->enum('status', ['accept', 'failed', 'pending'])->default('pending');
             $table->string('jabatan');
             $table->text('keterangan');
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

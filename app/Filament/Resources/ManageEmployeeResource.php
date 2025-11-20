@@ -85,8 +85,19 @@ class ManageEmployeeResource extends Resource
                     ->relationship(
                         name: 'user',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn($query) =>
-                        $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'super-admin'))
+                        modifyQueryUsing: function ($query) {
+                            $query->whereDoesntHave('roles', function ($q) {
+                                $q->where('name', 'super-admin');
+                            });
+
+                            if (Auth::user()->hasRole('hrd-officer')) {
+                                $query->whereNotIn('id', function ($sub) {
+                                    $sub->select('user_id')->from('manage_employees');
+                                });
+                            }
+
+                            return $query;
+                        }
                     )
                     ->label('Nama Karyawan')
                     ->required()

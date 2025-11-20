@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Account;
 
 class UserResource extends Resource
 {
@@ -47,7 +48,23 @@ class UserResource extends Resource
         return $form
             ->schema([
                 //
-                TextInput::make('name')->required(),
+                TextInput::make('name')->required()->disabled()->dehydrated(true),
+                Select::make('account_name')
+                    ->label('Account Name')
+                    ->options(
+                        Account::where('status', 'pending')
+                            ->pluck('name', 'id')
+                    )
+                    ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            $account = Account::find($state);
+                            if ($account) {
+                                $set('name', $account->name);
+                            }
+                        }
+                    }),
                 TextInput::make('email')->email()->required()->unique(),
                 TextInput::make('password')
                     ->password()
@@ -55,7 +72,7 @@ class UserResource extends Resource
                     ->dehydrateStateUsing(fn($state) => bcrypt($state)),
                 Select::make('roles')
                     ->label('Roles')
-                    ->multiple() // <- ini penting biar bisa pilih banyak
+                    ->multiple()
                     ->options(Role::pluck('name', 'name')->toArray())
                     ->required()
                     ->default(fn($record) => $record?->roles->pluck('name')->toArray())
@@ -78,6 +95,7 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
