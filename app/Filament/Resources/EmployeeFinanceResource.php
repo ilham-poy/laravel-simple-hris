@@ -6,10 +6,12 @@ use App\Filament\Resources\EmployeeFinanceResource\Pages;
 use App\Filament\Resources\EmployeeFinanceResource\RelationManagers;
 use App\Models\EmployeeFinance;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -24,6 +26,7 @@ class EmployeeFinanceResource extends Resource
         return $form
             ->schema([
                 //
+                Select::make('user_id')
             ]);
     }
 

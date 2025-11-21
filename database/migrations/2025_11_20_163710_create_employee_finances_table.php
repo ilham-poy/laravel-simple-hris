@@ -14,7 +14,12 @@ return new class extends Migration
         Schema::create('employee_finances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-
+            $table->integer('gaji_pokok');
+            $table->integer('jam_lembur');
+            $table->integer('gaji_lembur');
+            $table->integer('tidak_masuk');
+            $table->text('keterangan');
+            $table->enum('status_pegawai', ['magang', 'contract']);
             $table->timestamps();
         });
     }
