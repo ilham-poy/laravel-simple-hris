@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Run the migrations. 
      */
     public function up(): void
     {
@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->integer('gaji_pokok');
-            $table->integer('jam_lembur');
-            $table->integer('gaji_lembur');
+            $table->integer('jam_lembur')->default(0);
+            $table->integer('gaji_lembur')->default(0);
             $table->integer('tidak_masuk');
             $table->text('keterangan');
             $table->enum('status_pegawai', ['magang', 'contract']);

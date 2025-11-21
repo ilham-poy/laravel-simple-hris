@@ -11,9 +11,11 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Placeholder;
 
 class EmployeeFinanceResource extends Resource
 {
@@ -26,7 +28,49 @@ class EmployeeFinanceResource extends Resource
         return $form
             ->schema([
                 //
+                //            'user_id',
+                // 'gaji_pokok',
+                // 'jam_lembur',
+                // 'gaji_lembur',
+                // 'tidak_masuk',
+                // 'status_pegawai'
                 Select::make('user_id')
+                    ->relationship(
+                        name: 'user',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: function ($query) {
+                            $query->whereDoesntHave('roles', function ($q) {
+                                $q->where('name', 'super-admin');
+                            });
+
+                            if (Auth::user()->hasRole('hrd-officer')) {
+                                $query->whereNotIn('id', function ($sub) {
+                                    $sub->select('user_id')->from('employee_finances');
+                                });
+                            }
+
+                            return $query;
+                        }
+                    )
+                    ->label('Nama Karyawan')
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        $jamLembur = \App\Models\OvertimeEmployee::where('user_id', $state)->sum('total_lembur');
+                        $set('jam_lembur', $jamLembur);
+                    }),
+                TextInput::make('gaji_pokok')->label('Gaji Pokok *tidak usah menggunankan titik')->required(),
+                TextInput::make('gaji_lembur')->label('Gaji Lembur *tidak usah menggunankan titik')->required(),
+                TextInput::make('jam_lembur')
+                    ->numeric()
+                    ->label('Banyak Jam Lembur')
+                    ->disabled(),
+                TextInput::make('tidak_masuk')->label('Tidak Masuk ')->required(),
+                Select::make('status_pegawai')
+                    ->options([
+                        'magang' => 'Magang',
+                        'contract' => 'Contract',
+                    ])->label('Status Pegawai')->required(),
+
             ]);
     }
 

@@ -23,4 +23,13 @@ class EmployeeFinance extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function overtime()
+    {
+        return $this->hasMany(OvertimeEmployee::class, 'user_id', 'user_id');
+    }
+
+    public function getJamLemburAttribute()
+    {
+        return $this->overtime()->sum('total_lembur');
+    }
 }
