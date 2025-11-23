@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Placeholder;
+use App\Models\OvertimeEmployee;
+use Filament\Tables\Columns\TextColumn;
 
 class EmployeeFinanceResource extends Resource
 {
@@ -27,13 +29,7 @@ class EmployeeFinanceResource extends Resource
     {
         return $form
             ->schema([
-                //
-                //            'user_id',
-                // 'gaji_pokok',
-                // 'jam_lembur',
-                // 'gaji_lembur',
-                // 'tidak_masuk',
-                // 'status_pegawai'
+
                 Select::make('user_id')
                     ->relationship(
                         name: 'user',
@@ -54,8 +50,9 @@ class EmployeeFinanceResource extends Resource
                     )
                     ->label('Nama Karyawan')
                     ->reactive()
+                    //$state merupakan hasil atau data dari inputan, dalam kasus ini maka nilai state id dari user
                     ->afterStateUpdated(function ($state, callable $set) {
-                        $jamLembur = \App\Models\OvertimeEmployee::where('user_id', $state)->sum('total_lembur');
+                        $jamLembur = OvertimeEmployee::where('user_id', $state)->sum('total_lembur');
                         $set('jam_lembur', $jamLembur);
                     }),
                 TextInput::make('gaji_pokok')->label('Gaji Pokok *tidak usah menggunankan titik')->required(),
@@ -63,8 +60,9 @@ class EmployeeFinanceResource extends Resource
                 TextInput::make('jam_lembur')
                     ->numeric()
                     ->label('Banyak Jam Lembur')
-                    ->disabled(),
-                TextInput::make('tidak_masuk')->label('Tidak Masuk ')->required(),
+                    ->disabled()
+                    ->dehydrated(true),
+                TextInput::make('tidak_masuk')->label('Pengurangan Gaji Tidak Masuk')->required(),
                 Select::make('status_pegawai')
                     ->options([
                         'magang' => 'Magang',
@@ -79,6 +77,12 @@ class EmployeeFinanceResource extends Resource
         return $table
             ->columns([
                 //
+                TextColumn::make('user.name')
+                    ->label('Nama Pegawai'),
+                TextColumn::make('gaji_pokok')->label('Gaji Pokok'),
+                TextColumn::make('gaji_lembur')->label('Gaji Lembur'),
+                TextColumn::make('jam_lembur')->label('Banyak Jam Lembur'),
+                TextColumn::make('total_gaji')->label('Total Gaji'),
             ])
             ->filters([
                 //

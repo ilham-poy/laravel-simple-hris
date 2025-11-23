@@ -18,7 +18,8 @@ return new class extends Migration
             $table->integer('jam_lembur')->default(0);
             $table->integer('gaji_lembur')->default(0);
             $table->integer('tidak_masuk');
-            $table->text('keterangan');
+            $table->integer('total_gaji');
+            $table->text('keterangan')->nullable();
             $table->enum('status_pegawai', ['magang', 'contract']);
             $table->timestamps();
         });

@@ -16,6 +16,7 @@ class EmployeeFinance extends Model
         'jam_lembur',
         'gaji_lembur',
         'tidak_masuk',
+        'total_gaji',
         'status_pegawai'
     ];
 
