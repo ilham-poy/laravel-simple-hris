@@ -19,6 +19,10 @@ return new class extends Migration
             $table->integer('gaji_lembur')->default(0);
             $table->integer('tidak_masuk');
             $table->integer('total_gaji');
+            $table->date('work_month');
+            $table->date('salary_month');
+            $table->unique(['user_id', 'work_month']);
+            $table->unique(['user_id', 'salary_month']);
             $table->text('keterangan')->nullable();
             $table->enum('status_pegawai', ['magang', 'contract']);
             $table->timestamps();

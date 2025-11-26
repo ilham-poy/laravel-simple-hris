@@ -18,6 +18,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Placeholder;
 use App\Models\OvertimeEmployee;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Carbon;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
 
 class EmployeeFinanceResource extends Resource
 {
@@ -55,19 +58,50 @@ class EmployeeFinanceResource extends Resource
                         $jamLembur = OvertimeEmployee::where('user_id', $state)->sum('total_lembur');
                         $set('jam_lembur', $jamLembur);
                     }),
+
                 TextInput::make('gaji_pokok')->label('Gaji Pokok *tidak usah menggunankan titik')->required(),
+
                 TextInput::make('gaji_lembur')->label('Gaji Lembur *tidak usah menggunankan titik')->required(),
+
                 TextInput::make('jam_lembur')
                     ->numeric()
                     ->label('Banyak Jam Lembur')
                     ->disabled()
                     ->dehydrated(true),
+
                 TextInput::make('tidak_masuk')->label('Pengurangan Gaji Tidak Masuk')->required(),
+
                 Select::make('status_pegawai')
                     ->options([
                         'magang' => 'Magang',
                         'contract' => 'Contract',
                     ])->label('Status Pegawai')->required(),
+
+                DatePicker::make('work_month')
+                    ->label('Bulan Kerja')
+                    ->required()
+                    ->reactive()
+                    ->native(false)
+                    ->displayFormat('F Y')
+                    ->format('Y-m-d')
+                    ->closeOnDateSelection()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            $salary = \Carbon\Carbon::parse($state)->addMonth()->startOfMonth();
+                            $set('salary_month', $salary);
+                        }
+                    }),
+
+                DatePicker::make('salary_month')
+                    ->label('Bulan Gajian')
+                    ->disabled()
+                    ->native(false)
+                    ->displayFormat('F Y')
+                    ->format('Y-m-d')
+                    ->dehydrated(true),
+
+                Textarea::make('keterangan')->label('Keterangan'),
+
 
             ]);
     }
@@ -83,7 +117,12 @@ class EmployeeFinanceResource extends Resource
                 TextColumn::make('gaji_lembur')->label('Gaji Lembur'),
                 TextColumn::make('jam_lembur')->label('Banyak Jam Lembur'),
                 TextColumn::make('total_gaji')->label('Total Gaji'),
-            ])
+            ])->modifyQueryUsing(function (Builder $query) {
+                $user = Auth::user();
+                if ($user->hasRole('employee')) {
+                    $query->where('user_id', $user->id);
+                }
+            })
             ->filters([
                 //
             ])

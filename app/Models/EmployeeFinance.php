@@ -17,6 +17,8 @@ class EmployeeFinance extends Model
         'gaji_lembur',
         'tidak_masuk',
         'total_gaji',
+        'work_month',
+        'salary_month',
         'status_pegawai'
     ];
 
@@ -24,13 +26,25 @@ class EmployeeFinance extends Model
     {
         return $this->belongsTo(User::class);
     }
-    public function overtime()
-    {
-        return $this->hasMany(OvertimeEmployee::class, 'user_id', 'user_id');
-    }
 
-    public function getJamLemburAttribute()
+    protected static function booted()
     {
-        return $this->overtime()->sum('total_lembur');
+        static::saving(function ($model) {
+            if ($model->work_month) {
+                $model->work_month = \Carbon\Carbon::parse($model->work_month)->startOfMonth();
+            }
+            if ($model->salary_month) {
+                $model->salary_month = \Carbon\Carbon::parse($model->salary_month)->startOfMonth();
+            }
+        });
     }
+    // public function overtime()
+    // {
+    //     return $this->hasMany(OvertimeEmployee::class, 'user_id', 'user_id');
+    // }
+
+    // public function getJamLemburAttribute()
+    // {
+    //     return $this->overtime()->sum('total_lembur');
+    // }
 }
