@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Carbon\Carbon;
 use Filament\Forms\Components\Hidden;
+use Illuminate\Database\Eloquent\Model;
 
 class AttendanceResource extends Resource
 {
@@ -30,7 +31,16 @@ class AttendanceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
+    }
 
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    }
 
     public static function form(Form $form): Form
     {

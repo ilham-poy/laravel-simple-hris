@@ -21,10 +21,26 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
+use Illuminate\Database\Eloquent\Model;
 
 class EmployeeFinanceResource extends Resource
 {
     protected static ?string $model = EmployeeFinance::class;
+    public static function canCreate(): bool
+    {
+        return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    }
+
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -41,12 +57,6 @@ class EmployeeFinanceResource extends Resource
                             $query->whereDoesntHave('roles', function ($q) {
                                 $q->where('name', 'super-admin');
                             });
-
-                            if (Auth::user()->hasRole('hrd-officer')) {
-                                $query->whereNotIn('id', function ($sub) {
-                                    $sub->select('user_id')->from('employee_finances');
-                                });
-                            }
 
                             return $query;
                         }
@@ -117,6 +127,8 @@ class EmployeeFinanceResource extends Resource
                 TextColumn::make('gaji_lembur')->label('Gaji Lembur'),
                 TextColumn::make('jam_lembur')->label('Banyak Jam Lembur'),
                 TextColumn::make('total_gaji')->label('Total Gaji'),
+                TextColumn::make('work_month')->label('Bulan Kerja'),
+                TextColumn::make('salary_month')->label('Bulan Gajian'),
             ])->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 if ($user->hasRole('employee')) {
@@ -127,7 +139,10 @@ class EmployeeFinanceResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(
+                        fn($record): bool => Auth::user()->hasRole('hrd-officer')
+                    )
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -135,6 +150,7 @@ class EmployeeFinanceResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {

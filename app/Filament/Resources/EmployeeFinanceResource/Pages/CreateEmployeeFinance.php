@@ -8,6 +8,8 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use App\Models\Attendance;
+use Filament\Notifications\Notification;
+use Illuminate\Database\QueryException;
 
 class CreateEmployeeFinance extends CreateRecord
 {
@@ -28,5 +30,22 @@ class CreateEmployeeFinance extends CreateRecord
         // dd($data);
 
         return $data;
+    }
+    protected function handleRecordCreation(array $data): Model
+    {
+        try {
+            return static::getModel()::create($data);
+        } catch (QueryException $e) {
+            if ($e->errorInfo[1] == 1062) {
+                Notification::make()
+                    ->title('Gagal Menyimpan Data')
+                    ->body('Data gaji untuk bulan ini sudah ada.')
+                    ->danger()
+                    ->send();
+
+                // HENTIKAN proses, jangan lempar exception
+                $this->halt();
+            }
+        }
     }
 }
