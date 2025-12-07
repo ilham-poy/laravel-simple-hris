@@ -31,10 +31,17 @@ class AttendanceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    // untuk mengatur nama resource
+    public static function getNavigationLabel(): string
+    {
+        return 'Absen Kehadiran';
+    }
+
     public static function canEdit(Model $record): bool
     {
         return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
     }
+
 
 
     public static function canDelete(Model $record): bool

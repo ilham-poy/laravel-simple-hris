@@ -28,7 +28,11 @@ class ManageEmployeeResource extends Resource
     protected static ?string $model = ManageEmployee::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+    // Untuk Mengatur Nama Resource
+    public static function getNavigationLabel(): string
+    {
+        return "Manajemen Karyawan";
+    }
     // !!! yang bisa liat manage employe adalah role hrd
     public static function canViewAny(): bool
     {
@@ -36,6 +40,7 @@ class ManageEmployeeResource extends Resource
         return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
             ||  $user->can('manage-roles-and-permissions'));
     }
+
 
     public static function canCreate(): bool
     {

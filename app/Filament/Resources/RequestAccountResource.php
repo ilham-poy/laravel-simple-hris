@@ -27,6 +27,16 @@ class RequestAccountResource extends Resource
     protected static ?string $model = Account::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    public static function getNavigationLabel(): string
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('hrd-officer')) {
+            return "Mengajukan Account";
+        } else if ($user->hasRole('super-admin')) {
+            return "Persetujuan Account";
+        }
+    }
     public static function canViewAny(): bool
     {
         $user = Auth::user();

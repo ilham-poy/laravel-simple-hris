@@ -25,6 +25,14 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    public static function getNavigationLabel(): string
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('super-admin')) {
+            return "Pembuatan User";
+        }
+    }
     public static function canViewAny(): bool
     {
         return  Auth::user()->hasRole('super-admin');

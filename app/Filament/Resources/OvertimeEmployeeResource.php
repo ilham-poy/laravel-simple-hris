@@ -29,6 +29,16 @@ class OvertimeEmployeeResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    public static function getNavigationLabel(): string
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) {
+            return "Manajemen Lembur";
+        } else {
+            return "Mengajukan Lembur";
+        }
+    }
     // public static function canViewAny(): bool
     // {
     //     return  Auth::user()->hasRole('hrd-officer') || Auth::user()->hasRole('employee');

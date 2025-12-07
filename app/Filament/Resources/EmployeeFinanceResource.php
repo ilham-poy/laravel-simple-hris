@@ -26,6 +26,11 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeeFinanceResource extends Resource
 {
     protected static ?string $model = EmployeeFinance::class;
+    // Untuk Mengatur Nama Resource
+    public static function getNavigationLabel(): string
+    {
+        return 'Gaji Karyawan';
+    }
     public static function canCreate(): bool
     {
         return Auth::check() && Auth::user()->hasRole('hrd-officer');
