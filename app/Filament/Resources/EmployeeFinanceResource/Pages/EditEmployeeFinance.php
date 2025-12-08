@@ -12,7 +12,10 @@ use Illuminate\Database\QueryException;
 class EditEmployeeFinance extends EditRecord
 {
     protected static string $resource = EmployeeFinanceResource::class;
-
+    public function getTitle(): string
+    {
+        return 'Ubah Gaji Karyawan'; // Ganti judul halaman
+    }
     protected function getHeaderActions(): array
     {
         return [

@@ -28,6 +28,15 @@ class ResignResource extends Resource
     // {
     //     return Auth::user()->hasRole('employee');
     // }
+    public static function getNavigationLabel(): string
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('employee') || $user->hasRole('super-admin')) {
+            return "Mengajukan Resign";
+        }
+        return 0;
+    }
     public static function canViewAny(): bool
     {
         return Auth::check() && Auth::user()->hasRole('employee');

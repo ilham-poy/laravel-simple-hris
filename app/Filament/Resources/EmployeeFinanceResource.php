@@ -27,6 +27,8 @@ class EmployeeFinanceResource extends Resource
 {
     protected static ?string $model = EmployeeFinance::class;
     // Untuk Mengatur Nama Resource
+    protected static ?string $modelLabel = 'Gaji Karyawan';
+    protected static ?string $pluralModelLabel = 'Gaji Karyawan';
     public static function getNavigationLabel(): string
     {
         return 'Gaji Karyawan';

@@ -28,7 +28,8 @@ use Illuminate\Database\Eloquent\Model;
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
-
+    //untuk mengatur di bredcump
+    protected static ?string $pluralModelLabel = 'Daftar Kehadiran';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     // untuk mengatur nama resource
@@ -115,7 +116,9 @@ class AttendanceResource extends Resource
                 TextColumn::make('status')->label('Status Kehadiran'),
                 TextColumn::make('keterangan')->label('Keterangan')->default('-'),
 
-            ])->modifyQueryUsing(function (Builder $query) {
+            ])
+            ->defaultSort('tanggal', 'desc')
+            ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 if ($user->hasRole('employee')) {
                     $query->where('user_id', $user->id);

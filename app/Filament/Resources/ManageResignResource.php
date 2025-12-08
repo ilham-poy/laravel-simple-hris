@@ -24,22 +24,23 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ManageResignResource extends Resource
 {
     protected static ?string $model = Resign::class;
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Manage Resign';
 
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     public static function getNavigationLabel(): string
     {
         $user = Auth::user();
 
         if ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) {
             return "Manajemen Resign";
-        } else {
-            return "Mengajukan Resign";
         }
+        return 0;
     }
     // untuk mengatur nama resource
     public static function canViewAny(): bool
     {
-        return  Auth::user()->hasRole('hrd-officer') ||  Auth::user()->hasRole('employee');
+        return  Auth::user()->hasRole('hrd-officer');
     }
 
 

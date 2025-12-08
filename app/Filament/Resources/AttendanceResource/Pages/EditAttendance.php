@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Auth;
 class EditAttendance extends EditRecord
 {
     protected static string $resource = AttendanceResource::class;
+    public function getTitle(): string
+    {
+        return 'Ubah Kehadiran'; // Ganti judul halaman
+    }
     protected function authorizeAccess(): void
     {
         if (Auth::user()->hasRole('employee')) {

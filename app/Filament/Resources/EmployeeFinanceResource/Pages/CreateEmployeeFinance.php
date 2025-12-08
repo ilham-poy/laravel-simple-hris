@@ -15,7 +15,10 @@ class CreateEmployeeFinance extends CreateRecord
 {
     protected static string $resource = EmployeeFinanceResource::class;
 
-
+    public function getTitle(): string
+    {
+        return 'Gaji Karyawan'; // Ganti judul halaman
+    }
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $start = Carbon::now()->startOfMonth();

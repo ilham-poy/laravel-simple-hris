@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Auth;
 class CreateManageEmployee extends CreateRecord
 {
     protected static string $resource = ManageEmployeeResource::class;
+    public function getTitle(): string
+    {
+        return 'Manajemen Karyawan'; // Ganti judul halaman
+    }
     protected function afterCreate(): void
     {
         ActivityLog::create([
