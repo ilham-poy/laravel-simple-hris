@@ -9,7 +9,10 @@ use Filament\Resources\Pages\EditRecord;
 class EditResign extends EditRecord
 {
     protected static string $resource = ResignResource::class;
-
+    public function getTitle(): string
+    {
+        return 'Ubah Data Resign'; // Ganti judul halaman
+    }
     protected function getHeaderActions(): array
     {
         return [

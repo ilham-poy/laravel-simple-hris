@@ -26,6 +26,8 @@ class ManageResignResource extends Resource
     protected static ?string $model = Resign::class;
     protected static ?string $navigationLabel = 'Manage Resign';
 
+    protected static ?string $pluralModelLabel = 'Manajemen Resign';
+
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     public static function getNavigationLabel(): string
@@ -50,7 +52,7 @@ class ManageResignResource extends Resource
     }
     public static function canEdit(Model $record): bool
     {
-        return Auth::check() && (Auth::user()->hasRole('hrd-officer') || Auth::user()->hasRole('employee'));
+        return Auth::check() && (Auth::user()->hasRole('employee'));
     }
 
     public static function canDelete(Model $record): bool

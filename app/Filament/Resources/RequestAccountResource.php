@@ -25,6 +25,7 @@ use Filament\Notifications\Notification;
 class RequestAccountResource extends Resource
 {
     protected static ?string $model = Account::class;
+    protected static ?string $pluralModelLabel = 'Mengajukan Account';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     public static function getNavigationLabel(): string

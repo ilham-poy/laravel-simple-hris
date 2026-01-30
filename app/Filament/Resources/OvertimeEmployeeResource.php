@@ -29,6 +29,8 @@ class OvertimeEmployeeResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $pluralModelLabel = 'Manajemen Lembur';
+
     public static function getNavigationLabel(): string
     {
         $user = Auth::user();

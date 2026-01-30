@@ -14,6 +14,10 @@ class EditRequestAccount extends EditRecord
     {
         return $data;
     }
+    public function getTitle(): string
+    {
+        return 'Ubah Data Account'; // Ganti judul halaman
+    }
 
     protected function saved($record): void
     {

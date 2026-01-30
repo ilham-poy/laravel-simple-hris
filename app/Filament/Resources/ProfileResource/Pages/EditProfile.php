@@ -9,7 +9,10 @@ use Filament\Resources\Pages\EditRecord;
 class EditProfile extends EditRecord
 {
     protected static string $resource = ProfileResource::class;
-
+    public function getTitle(): string
+    {
+        return 'Data Pribadi'; // Ganti judul halaman
+    }
     protected function getHeaderActions(): array
     {
         return [

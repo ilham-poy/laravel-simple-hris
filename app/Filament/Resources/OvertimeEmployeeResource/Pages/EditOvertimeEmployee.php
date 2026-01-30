@@ -9,7 +9,10 @@ use Filament\Resources\Pages\EditRecord;
 class EditOvertimeEmployee extends EditRecord
 {
     protected static string $resource = OvertimeEmployeeResource::class;
-
+    public function getTitle(): string
+    {
+        return 'Ubah Data Lembur'; // Ganti judul halaman
+    }
     protected function getHeaderActions(): array
     {
         return [

@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateResign extends CreateRecord
 {
     protected static string $resource = ResignResource::class;
+    public function getTitle(): string
+    {
+        return 'Mengajukan Resign'; // Ganti judul halaman
+    }
 }

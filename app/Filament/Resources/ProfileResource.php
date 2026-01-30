@@ -21,20 +21,18 @@ use App\Models\User;
 class ProfileResource extends Resource
 {
     protected static ?string $model = ManageEmployee::class;
-    protected static ?string $navigationLabel = 'Profile';
+
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
     // Untuk mengatur nama resource
     public static function getNavigationLabel(): string
     {
         return 'Profil Karyawan';
     }
 
-    public static function getModelLabel(): string
-    {
-        return 'Profile';
-    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -46,7 +44,7 @@ class ProfileResource extends Resource
     }
     public static function canCreate(): bool
     {
-        return Auth::check() && Auth::user()->can('create-employee');
+        return 0;
     }
 
     public static function canEdit(Model $record): bool

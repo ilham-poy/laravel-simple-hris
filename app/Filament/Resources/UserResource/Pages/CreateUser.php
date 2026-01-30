@@ -15,6 +15,10 @@ class CreateUser extends CreateRecord
     // {
     //     $this->record->assignRole($this->form->getState()['role']);
     // }
+    public function getTitle(): string
+    {
+        return 'Pembuatan User'; // Ganti judul halaman
+    }
     protected function afterCreate(): void
     {
         $roles = $this->data['roles'] ?? [];

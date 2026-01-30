@@ -23,6 +23,7 @@ use App\Models\Account;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+    protected static ?string $pluralModelLabel = 'Pembuatan User';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     public static function getNavigationLabel(): string

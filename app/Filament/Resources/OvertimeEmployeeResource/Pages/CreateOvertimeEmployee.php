@@ -11,4 +11,8 @@ use Filament\Notifications\Notification;
 class CreateOvertimeEmployee extends CreateRecord
 {
     protected static string $resource = OvertimeEmployeeResource::class;
+    public function getTitle(): string
+    {
+        return 'Mengajukan Lembur'; // Ganti judul halaman
+    }
 }

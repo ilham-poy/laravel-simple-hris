@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 class ResignResource extends Resource
 {
     protected static ?string $model = Resign::class;
+    protected static ?string $pluralModelLabel = 'Manajemen Resign';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

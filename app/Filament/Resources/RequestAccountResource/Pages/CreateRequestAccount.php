@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateRequestAccount extends CreateRecord
 {
     protected static string $resource = RequestAccountResource::class;
+    public function getTitle(): string
+    {
+        return 'Mengajukan Account'; // Ganti judul halaman
+    }
 }
