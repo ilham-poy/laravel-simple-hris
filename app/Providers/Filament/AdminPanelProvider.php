@@ -27,7 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('System Human Resource (HRIS)')
+            ->brandName('Internal System HandToHand')
             ->brandLogoHeight('40px')
             ->colors([
                 'primary' => Color::Amber,

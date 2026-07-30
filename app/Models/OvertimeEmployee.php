@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 class OvertimeEmployee extends Model
 {
     //
+
     use HasFactory, HasRoles;
+    protected $attributes = [
+        'status' => 'pending', // Otomatis 'pending' saat create baru
+    ];
     protected $fillable = [
         'user_id',
         'tanggal',

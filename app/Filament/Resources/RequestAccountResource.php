@@ -28,26 +28,26 @@ class RequestAccountResource extends Resource
     protected static ?string $pluralModelLabel = 'Mengajukan Account';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    public static function getNavigationLabel(): string
-    {
-        $user = Auth::user();
+    // public static function getNavigationLabel(): string
+    // {
+    //     $user = Auth::user();
 
-        if ($user->hasRole('hrd-officer')) {
-            return "Mengajukan Account";
-        } else if ($user->hasRole('super-admin')) {
-            return "Persetujuan Account";
-        }
-    }
-    public static function canViewAny(): bool
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
-            ||  $user->can('manage-roles-and-permissions'));
-    }
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->can('manage-roles-and-permissions');
-    }
+    //     if ($user->hasRole('hrd-officer')) {
+    //         return "Mengajukan Account";
+    //     } else if ($user->hasRole('super-admin')) {
+    //         return "Persetujuan Account";
+    //     }
+    // }
+    // public static function canViewAny(): bool
+    // {
+    //     $user = Auth::user();
+    //     return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
+    //         ||  $user->can('manage-roles-and-permissions'));
+    // }
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('manage-roles-and-permissions');
+    // }
     public static function form(Form $form): Form
     {
         return $form

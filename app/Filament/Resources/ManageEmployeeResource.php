@@ -31,53 +31,53 @@ class ManageEmployeeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     // Untuk Mengatur Nama Resource
-    public static function getNavigationLabel(): string
-    {
-        return "Manajemen Karyawan";
-    }
-    // !!! yang bisa liat manage employe adalah role hrd
-    public static function canViewAny(): bool
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
-            ||  $user->can('manage-roles-and-permissions'));
-    }
+    // public static function getNavigationLabel(): string
+    // {
+    //     return "Manajemen Karyawan";
+    // }
+    // // !!! yang bisa liat manage employe adalah role hrd
+    // public static function canViewAny(): bool
+    // {
+    //     $user = Auth::user();
+    //     return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
+    //         ||  $user->can('manage-roles-and-permissions'));
+    // }
 
 
-    public static function canCreate(): bool
-    {
-        return Auth::check() && Auth::user()->can('create-employee');
-    }
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('create-employee');
+    // }
 
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->can('edit-employee-data');
-    }
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('edit-employee-data');
+    // }
 
-    public static function canDelete(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->can('delete-employee');
-    }
+    // public static function canDelete(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('delete-employee');
+    // }
 
 
-    public static function afterUpdate(Model $record): void
-    {
-        ActivityLog::create([
-            'action' => 'update',
-            'model_type' => class_basename($record),
-            'model_id' => $record->id,
-            'performed_by' => auth()->id(),
-        ]);
-    }
-    public static function afterDelete(Model $record): void
-    {
-        ActivityLog::create([
-            'action' => 'delete',
-            'model_type' => class_basename($record),
-            'model_id' => $record->id,
-            'performed_by' => auth()->id(),
-        ]);
-    }
+    // public static function afterUpdate(Model $record): void
+    // {
+    //     ActivityLog::create([
+    //         'action' => 'update',
+    //         'model_type' => class_basename($record),
+    //         'model_id' => $record->id,
+    //         'performed_by' => auth()->id(),
+    //     ]);
+    // }
+    // public static function afterDelete(Model $record): void
+    // {
+    //     ActivityLog::create([
+    //         'action' => 'delete',
+    //         'model_type' => class_basename($record),
+    //         'model_id' => $record->id,
+    //         'performed_by' => auth()->id(),
+    //     ]);
+    // }
 
 
 

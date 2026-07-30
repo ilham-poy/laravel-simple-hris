@@ -29,27 +29,28 @@ class EmployeeFinanceResource extends Resource
     // Untuk Mengatur Nama Resource
     protected static ?string $modelLabel = 'Gaji Karyawan';
     protected static ?string $pluralModelLabel = 'Gaji Karyawan';
-    public static function getNavigationLabel(): string
-    {
-        return 'Gaji Karyawan';
-    }
-    public static function canCreate(): bool
-    {
-        return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    }
-
-
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    }
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    // public static function getNavigationLabel(): string
+    // {
+    //     return 'Gaji Karyawan';
+    // }
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    // }
+
+
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
+    // }
+
+    // public static function canDelete(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    // }
+
 
     public static function form(Form $form): Form
     {

@@ -29,25 +29,42 @@ class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
     //untuk mengatur di bredcump
-    protected static ?string $pluralModelLabel = 'Daftar Kehadiran';
+    protected static ?string $pluralModelLabel = 'Kehadiran';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    // ? INI 
+    // !! Penjelasan Fungsi, Query, Sintaks, dan Logika
+    // * Penjelasan Keseluruhan
+    // TODO
+
+    // * Jadi dalam Attendance yang bisa Full Access CRUD hanya permission manage-roles-and-permissions, 
+    // * dan yang bisa liat semua data adalah super admin dan hrd-officer,
+    //  *sedangkan employee hanya bisa liat data dia sendiri.
     // untuk mengatur nama resource
     public static function getNavigationLabel(): string
     {
-        return 'Absen Kehadiran';
+        if (! Auth::check()) {
+            return 'Absent';
+        }
+        if (Auth::user()->hasAnyPermission(['manage-roles-and-permissions', 'view-employee-data', 'edit-employee-data'])) {
+            return 'Manajemen Kehadiran';
+        } elseif (Auth::user()->can('submit-attendance')) {
+            return 'Absen Kehadiran';
+        }
     }
+
 
     public static function canEdit(Model $record): bool
     {
-        return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
+        return Auth::check() && (Auth::user()->can([
+            'manage-roles-and-permissions',
+
+        ]));
     }
-
-
 
     public static function canDelete(Model $record): bool
     {
-        return Auth::check() && Auth::user()->hasRole('hrd-officer');
+        return Auth::check() && (Auth::user()->can(['manage-roles-and-permissions']));
     }
 
     public static function form(Form $form): Form
@@ -61,14 +78,12 @@ class AttendanceResource extends Resource
                         titleAttribute: 'name',
                         modifyQueryUsing: function ($query) {
                             // Jika HRD, tampilkan semua user kecuali super admin
-                            if (Auth::user()->hasRole('hrd-officer')) {
-                                return $query->whereDoesntHave('roles', function ($q) {
-                                    $q->where('name', 'super-admin');
-                                });
+                            if (Auth::user()->can('manage-employee')) {
+                                return $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'super-admin'));
                             }
 
                             // Jika employee, hanya tampilkan dirinya sendiri
-                            if (Auth::user()->hasRole('employee')) {
+                            if (Auth::user()->can('submit-attendance')) {
                                 return $query->where('id', Auth::id());
                             }
 
@@ -120,7 +135,9 @@ class AttendanceResource extends Resource
             ->defaultSort('tanggal', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
-                if ($user->hasRole('employee')) {
+                // !! fungsi untuk filter apabila ada permission 
+                // !! submit-attendance maka akan dijalankan query wherenya
+                if ($user->can('submit-attendance')) {
                     $query->where('user_id', $user->id);
                 }
             })

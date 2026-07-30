@@ -30,35 +30,35 @@ class ManageResignResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    public static function getNavigationLabel(): string
-    {
-        $user = Auth::user();
+    // public static function getNavigationLabel(): string
+    // {
+    //     $user = Auth::user();
 
-        if ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) {
-            return "Manajemen Resign";
-        }
-        return 0;
-    }
-    // untuk mengatur nama resource
-    public static function canViewAny(): bool
-    {
-        return  Auth::user()->hasRole('hrd-officer');
-    }
+    //     if ($user->hasRole('hrd-officer', 'super-admin')) {
+    //         return "Manajemen Resign";
+    //     }
+    //     return 0;
+    // }
+    // // untuk mengatur nama resource
+    // public static function canViewAny(): bool
+    // {
+    //     return  Auth::user()->hasRole('hrd-officer', 'super-admin');
+    // }
 
 
-    public static function canCreate(): bool
-    {
-        return Auth::check() && Auth::user()->can('submit-leave');
-    }
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && (Auth::user()->hasRole('employee'));
-    }
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('submit-leave');
+    // }
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() && (Auth::user()->hasRole('employee'));
+    // }
 
-    public static function canDelete(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    }
+    // public static function canDelete(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
+    // }
 
 
     public static function form(Form $form): Form

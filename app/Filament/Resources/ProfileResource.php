@@ -27,30 +27,30 @@ class ProfileResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     // Untuk mengatur nama resource
-    public static function getNavigationLabel(): string
-    {
-        return 'Profil Karyawan';
-    }
+    // public static function getNavigationLabel(): string
+    // {
+    //     return 'Profil Karyawan';
+    // }
 
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
 
-    public static function getPluralModelLabel(): string
-    {
-        return 'Profiles';
-    }
-    public static function canCreate(): bool
-    {
-        return 0;
-    }
+    // public static function getPluralModelLabel(): string
+    // {
+    //     return 'Profiles';
+    // }
+    // public static function canCreate(): bool
+    // {
+    //     return 0;
+    // }
 
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->can('edit-employee-data');
-    }
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('edit-employee-data');
+    // }
 
 
     public static function form(Form $form): Form

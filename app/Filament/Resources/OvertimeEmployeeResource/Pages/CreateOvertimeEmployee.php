@@ -13,6 +13,7 @@ class CreateOvertimeEmployee extends CreateRecord
     protected static string $resource = OvertimeEmployeeResource::class;
     public function getTitle(): string
     {
+        $data['status'] = 'pending';
         return 'Mengajukan Lembur'; // Ganti judul halaman
     }
 }

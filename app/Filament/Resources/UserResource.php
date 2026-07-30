@@ -26,31 +26,31 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'Pembuatan User';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    public static function getNavigationLabel(): string
-    {
-        $user = Auth::user();
+    // public static function getNavigationLabel(): string
+    // {
+    //     $user = Auth::user();
 
-        if ($user->hasRole('super-admin')) {
-            return "Pembuatan User";
-        }
-    }
-    public static function canViewAny(): bool
-    {
-        return  Auth::user()->hasRole('super-admin');
-    }
-    public static function canCreate(): bool
-    {
-        return Auth::check() && Auth::user()->can('manage-roles-and-permissions');
-    }
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::check() &&  Auth::user()->hasRole('super-admin');
-    }
+    //     if ($user->hasRole('super-admin')) {
+    //         return "Pembuatan User";
+    //     }
+    // }
+    // public static function canViewAny(): bool
+    // {
+    //     return  Auth::user()->hasRole('super-admin');
+    // }
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::check() && Auth::user()->can('manage-roles-and-permissions');
+    // }
+    // public static function canEdit(Model $record): bool
+    // {
+    //     return Auth::check() &&  Auth::user()->hasRole('super-admin');
+    // }
 
-    public static function canDelete(Model $record): bool
-    {
-        return Auth::check() && Auth::user()->hasRole('super-admin');
-    }
+    // public static function canDelete(Model $record): bool
+    // {
+    //     return Auth::check() && Auth::user()->hasRole('super-admin');
+    // }
 
     public static function form(Form $form): Form
     {
