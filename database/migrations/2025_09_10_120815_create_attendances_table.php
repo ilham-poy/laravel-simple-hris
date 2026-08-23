@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('durasi_keterlambatan')->nullable();;
 
             $table->text('keterangan')->nullable();
-
+            $table->string('lampiran')->nullable(); // Menyimpan path file lampiran
             $table->timestamps();
         });
     }

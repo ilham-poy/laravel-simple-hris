@@ -8,8 +8,11 @@ use App\Models\Attendance;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Illuminate\Support\Facades\Storage;
 use Filament\Resources\Resource;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -24,6 +27,9 @@ use Filament\Notifications\Notification;
 use Carbon\Carbon;
 use Filament\Forms\Components\Hidden;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Illuminate\Support\HtmlString;
 
 class AttendanceResource extends Resource
 {
@@ -77,21 +83,18 @@ class AttendanceResource extends Resource
                         name: 'user',
                         titleAttribute: 'name',
                         modifyQueryUsing: function ($query) {
-                            // Jika HRD, tampilkan semua user kecuali super admin
-                            if (Auth::user()->can('manage-employee')) {
-                                return $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'super-admin'));
-                            }
-
                             // Jika employee, hanya tampilkan dirinya sendiri
-                            if (Auth::user()->can('submit-attendance')) {
+                            if (Auth::user()->hasRole('super-admin')) {
+                                return $query;
+                            } elseif (Auth::user()->hasRole('driver') || Auth::user()->hasRole('warehouse-staff')) {
                                 return $query->where('id', Auth::id());
                             }
 
                             // Default: tampilkan semua
                             return $query;
                         }
-                    )->required()
-                    ->visible(fn() => !Auth::user()->hasRole('super admin')),
+                    )->required(),
+                // ->visible(fn() => !Auth::user()->hasRole('super-admin')),
                 DatePicker::make('tanggal')
                     ->required()
                     ->minDate(today())
@@ -115,6 +118,34 @@ class AttendanceResource extends Resource
                     ->required()
                     ->dehydrated(true),
                 Textarea::make('keterangan')->label('Keterangan'),
+                FileUpload::make('lampiran')
+                    ->multiple()
+                    ->label('Lampiran (Opsional)')
+                    ->directory('attendance-attachments')
+                    ->maxSize(5120) // 5MB
+                    // ->visibility('private')
+                    ->acceptedFileTypes(['image/*', 'application/pdf'])
+                    ->helperText('Unggah file gambar, PDF Maksimal 5MB.')
+                    ->dehydrated(fn($state) => filled($state))
+
+                    // 2. Memastikan format data dari database (baik string biasa maupun JSON array) 
+                    //    dapat dibaca dengan benar oleh komponen FileUpload
+                    ->formatStateUsing(function ($state) {
+                        if (empty($state)) {
+                            return [];
+                        }
+
+                        // Jika data di DB masih berupa string JSON '["path/file.jpg"]'
+                        if (is_string($state) && (str_starts_with($state, '[') || str_starts_with($state, '{'))) {
+                            return json_decode($state, true) ?? [];
+                        }
+
+                        // Jika data berupa string tunggal 'path/file.jpg'
+                        if (is_string($state)) {
+                            return [$state];
+                        }
+                        return $state;
+                    })
             ]);
     }
 
@@ -128,26 +159,157 @@ class AttendanceResource extends Resource
                     ->searchable(),
                 TextColumn::make('tanggal')->label('Tanggal Kehadiran'),
                 TextColumn::make('jam_masuk')->label('Jam Masuk'),
-                TextColumn::make('status')->label('Status Kehadiran'),
+                TextColumn::make('status')->label('Status Kehadiran')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'telat' => 'danger', // Kuning
+                        'hadir' => 'success', // Hijau
+                        'izin' => 'info', // Hijau
+                        'sakit' => 'info', // Hijau
+                        'alpha' => 'warning',  // Merah
+                        default => 'gray',
+                    })
+                    ->sortable(),
                 TextColumn::make('keterangan')->label('Keterangan')->default('-'),
+                TextColumn::make('lampiran')
+                    ->label('Lampiran')
+                    ->default('Lihat Lampiran')
+                    ->icon('heroicon-o-paper-clip')
+                    ->iconColor('primary')
+                    ->color('primary')
+                    ->alignLeft() // 👈 INI KUNCI UTAMA: Memaksa teks & ikon rata kiri lurus dengan header
+                    ->formatStateUsing(fn($state) => empty($state) ? '-' : 'Lihat Lampiran')
+                    ->action(
+                        Tables\Actions\Action::make('preview_lampiran')
+                            ->modalHeading('Daftar Lampiran Absensi')
+                            ->infolist([
+                                Section::make()->schema([
+                                    TextEntry::make('lampiran')
+                                        ->hiddenLabel()
+                                        ->formatStateUsing(function ($record) {
+                                            $raw = $record->lampiran;
 
+                                            if (empty($raw)) {
+                                                return 'Tidak ada lampiran';
+                                            }
+
+                                            // Handling format String maupun JSON Array
+                                            if (is_string($raw) && (str_starts_with($raw, '[') || str_starts_with($raw, '{'))) {
+                                                $files = json_decode($raw, true) ?? [];
+                                            } elseif (is_array($raw)) {
+                                                $files = $raw;
+                                            } else {
+                                                $files = [$raw];
+                                            }
+
+                                            $html = '<div style="display: flex; gap: 12px; flex-wrap: wrap;">';
+
+                                            foreach ($files as $filePath) {
+                                                $cleanPath = str_replace('//', '/', $filePath);
+                                                $url = Storage::url($cleanPath);
+                                                $isPdf = str_ends_with(strtolower($cleanPath), '.pdf');
+
+                                                if ($isPdf) {
+                                                    $html .= "
+                                        <a href='{$url}' target='_blank' style='display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; border: 1px solid #374151; border-radius: 8px; background: #1f2937; color: #ef4444; font-weight: bold; text-decoration: none;'>
+                                            📄 Buka PDF
+                                        </a>
+                                    ";
+                                                } else {
+                                                    $html .= "
+                                        <a href='{$url}' target='_blank'>
+                                            <img src='{$url}' style='width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #374151;' />
+                                        </a>
+                                    ";
+                                                }
+                                            }
+
+                                            $html .= '</div>';
+
+                                            return new HtmlString($html);
+                                        }),
+                                ]),
+                            ])
+                    )
+                    ->label('Lampiran')
+                    ->action(
+                        Tables\Actions\Action::make('preview_lampiran')
+                            ->label('Lampiran')
+                            ->icon('heroicon-o-paper-clip')
+                            ->modalHeading('Daftar Lampiran Absensi')
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Tutup')
+                            ->infolist([
+                                Section::make()->schema([
+                                    TextEntry::make('lampiran')
+                                        ->hiddenLabel()
+                                        ->formatStateUsing(function ($record) {
+                                            $raw = $record->lampiran;
+
+                                            if (empty($raw)) {
+                                                return 'Tidak ada lampiran';
+                                            }
+
+                                            // Handling format String maupun JSON Array
+                                            if (is_string($raw) && (str_starts_with($raw, '[') || str_starts_with($raw, '{'))) {
+                                                $files = json_decode($raw, true) ?? [];
+                                            } elseif (is_array($raw)) {
+                                                $files = $raw;
+                                            } else {
+                                                $files = [$raw];
+                                            }
+
+                                            $html = '<div style="display: flex; gap: 12px; flex-wrap: wrap;">';
+
+                                            foreach ($files as $filePath) {
+                                                $cleanPath = str_replace('//', '/', $filePath);
+                                                $url = Storage::url($cleanPath);
+                                                $isPdf = str_ends_with(strtolower($cleanPath), '.pdf');
+
+                                                if ($isPdf) {
+                                                    $html .= "
+                                        <a href='{$url}' target='_blank' style='display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; border: 1px solid #374151; border-radius: 8px; background: #1f2937; color: #ef4444; font-weight: bold; text-decoration: none;'>
+                                            📄 Buka PDF
+                                        </a>
+                                    ";
+                                                } else {
+                                                    $html .= "
+                                        <a href='{$url}' target='_blank'>
+                                            <img src='{$url}' style='width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #374151;' />
+                                        </a>
+                                    ";
+                                                }
+                                            }
+
+                                            $html .= '</div>';
+
+                                            return new HtmlString($html);
+                                        }),
+                                ]),
+                            ])
+                    )
             ])
             ->defaultSort('tanggal', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
-                // !! fungsi untuk filter apabila ada permission 
-                // !! submit-attendance maka akan dijalankan query wherenya
-                if ($user->can('submit-attendance')) {
-                    $query->where('user_id', $user->id);
+                // Jika Super Admin, tampilkan SEMUA data (tanpa filter)
+                if ($user->hasAnyPermission(['manage-roles-and-permissions', 'view-employee-data'])) {
+                    return $query;
                 }
+
+                // Jika BUKAN Super Admin, filter data (misal: hanya data milik user sendiri)
+                return $query->where('user_id', $user->id);
             })
             ->filters([
                 //
+                // 'hadir', 'izin', 'sakit', 'telat', 'alpha'
                 SelectFilter::make('status')
                     ->options([
                         'hadir' => 'Hadir',
                         'izin' => 'Izin',
                         'sakit' => 'Sakit',
+                        'telat' => 'Telat',
+                        'alpha' => 'Tidak Hadir',
                     ])
             ])
             ->actions([
@@ -155,10 +317,12 @@ class AttendanceResource extends Resource
                     ->visible(
                         fn($record): bool => Auth::user()->hasRole('hrd-officer')
                     ),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+
                 ]),
             ]);
     }

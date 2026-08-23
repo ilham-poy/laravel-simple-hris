@@ -15,8 +15,10 @@ class Attendance extends Model
         'jam_masuk',
         'jam_keluar',
         'status',
+        'lampiran',
         'keterangan'
     ];
+
 
 
     public function user()
