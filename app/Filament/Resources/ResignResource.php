@@ -25,32 +25,6 @@ class ResignResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    // public static function canViewAny(): bool
-    // {
-    //     return Auth::user()->hasRole('employee');
-    // }
-    // public static function getNavigationLabel(): string
-    // {
-    //     $user = Auth::user();
-
-    //     if ($user->hasRole('employee') || $user->hasRole('super-admin')) {
-    //         return "Mengajukan Resign";
-    //     }
-    //     return 0;
-    // }
-    // public static function canViewAny(): bool
-    // {
-    //     return Auth::check() && Auth::user()->hasRole('employee');
-    // }
-
-    // public static function canCreate(): bool
-    // {
-    //     return Auth::check() && Auth::user()->can('submit-leave');
-    // }
-    // public static function canEdit(Model $record): bool
-    // {
-    //     return Auth::check() && (Auth::user()->hasRole('hrd-officer') || Auth::user()->hasRole('employee'));
-    // }
 
     public static function form(Form $form): Form
     {

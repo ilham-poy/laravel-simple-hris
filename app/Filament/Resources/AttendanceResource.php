@@ -86,12 +86,9 @@ class AttendanceResource extends Resource
                             // Jika employee, hanya tampilkan dirinya sendiri
                             if (Auth::user()->hasRole('super-admin')) {
                                 return $query;
-                            } elseif (Auth::user()->hasRole('driver') || Auth::user()->hasRole('warehouse-staff')) {
+                            } elseif (Auth::user()->hasAnyRole(['driver', 'warehouse-staff', 'hrd-officer', 'finance'])) {
                                 return $query->where('id', Auth::id());
                             }
-
-                            // Default: tampilkan semua
-                            return $query;
                         }
                     )->required(),
                 // ->visible(fn() => !Auth::user()->hasRole('super-admin')),

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Permission\Traits\HasRoles;
-use App\Models\User;
+use Carbon\Carbon;
 
 class EmployeeFinance extends Model
 {
-    //
-    use HasRoles;
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'gaji_pokok',
@@ -19,32 +19,42 @@ class EmployeeFinance extends Model
         'total_gaji',
         'work_month',
         'salary_month',
-        'status_pegawai'
+        'status_pegawai',
     ];
 
+    /**
+     * Casting tipe data otomatis
+     */
+    protected $casts = [
+        'gaji_pokok'   => 'decimal:2',
+        'jam_lembur'   => 'decimal:2',
+        'gaji_lembur'  => 'decimal:2',
+        'tidak_masuk'  => 'integer',
+        'total_gaji'   => 'decimal:2',
+        'work_month'   => 'date',
+        'salary_month' => 'date',
+    ];
+
+    /**
+     * Relasi ke User
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Booted event untuk standarisasi tanggal awal bulan
+     */
     protected static function booted()
     {
         static::saving(function ($model) {
             if ($model->work_month) {
-                $model->work_month = \Carbon\Carbon::parse($model->work_month)->startOfMonth();
+                $model->work_month = Carbon::parse($model->work_month)->startOfMonth();
             }
             if ($model->salary_month) {
-                $model->salary_month = \Carbon\Carbon::parse($model->salary_month)->startOfMonth();
+                $model->salary_month = Carbon::parse($model->salary_month)->startOfMonth();
             }
         });
     }
-    // public function overtime()
-    // {
-    //     return $this->hasMany(OvertimeEmployee::class, 'user_id', 'user_id');
-    // }
-
-    // public function getJamLemburAttribute()
-    // {
-    //     return $this->overtime()->sum('total_lembur');
-    // }
 }

@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Model;
 
 class ManageEmployee extends Model
 {
-    //
-    use HasFactory, HasRoles;
+    use HasFactory;
+
+    // Nama tabel eksplisit (opsional, tapi aman)
+    protected $table = 'manage_employees';
+
     protected $fillable = [
         'user_id',
         'nama_lengkap',
@@ -19,10 +21,25 @@ class ManageEmployee extends Model
         'no_keluarga_1',
         'no_keluarga_2',
         'jenis_kelamin',
-        'alamat'
+        'alamat',
+        // Kolom SIM/SIO (Hasil gabungan dari skema sebelumnya)
+        'nomor_sim',
+        'tipe_sim',
+        'expired_sim',
     ];
+
+    /**
+     * Casting tanggal kadaluarsa SIM ke format Carbon/Date
+     */
+    protected $casts = [
+        'expired_sim' => 'date',
+    ];
+
+    /**
+     * Relasi ke User
+     */
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 }

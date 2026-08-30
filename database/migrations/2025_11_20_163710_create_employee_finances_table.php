@@ -24,7 +24,7 @@ return new class extends Migration
             $table->unique(['user_id', 'work_month']);
             $table->unique(['user_id', 'salary_month']);
             $table->text('keterangan')->nullable();
-            $table->enum('status_pegawai', ['magang', 'contract']);
+            $table->enum('status_pegawai', ['magang', 'contract', 'fulltime'])->default('fulltime');
             $table->timestamps();
         });
     }

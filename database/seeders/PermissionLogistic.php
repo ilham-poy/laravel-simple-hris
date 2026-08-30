@@ -18,45 +18,70 @@ class PermissionLogistic extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // ==========================================
-        // 1. DEFINISI PERMISSION
+        // 1. DEFINISI PERMISSION LANGSUNG (FLAT ARRAY)
         // ==========================================
         $permissions = [
-            // 🔧 SUPER ADMIN
-            'manage-roles-and-permissions',
+            // Role & System Management
+            'role:create',
+            'role:read',
+            'role:update',
+            'role:delete',
 
-            // 👥 HRD — Data Karyawan & Operasional
-            'view-employee-data',
-            'edit-employee-data',
-            'create-employee',
-            'delete-employee',
-            'manage-employee',
-            'manage-driver-licenses', // Monitoring masa berlaku SIM & SIO
-            'manage-shift-schedule',  // Mengatur jadwal shift gudang & operasional
-            'approve-leave',
-            'approve-overtime',
-            'view-performance-review',
-            'view-attendance-report',
+            // Employee
+            'employee:create',
+            'employee:read',
+            'employee:update',
+            'employee:delete',
 
-            // 💰 FINANCE / KEUANGAN
-            'manage-payroll',
-            'manage-trip-allowance',  // Pengaturan nominal uang jalan
-            'approve-reimbursement',  // Validasi struk & bayar klaim jalan
+            // Driver & Staff Licenses (SIM/SIO)
+            'license:create',
+            'license:read',
+            'license:update',
+            'license:delete',
 
-            // 🙋‍♂️ COMMON EMPLOYEE (Permission Dasar Semua Karyawan)
-            'submit-attendance',      // Absensi dasar
-            'submit-leave',           // Pengajuan cuti/sakit
-            'submit-overtime',        // Pengajuan lembur
-            'view-own-payslip',       // Lihat slip gaji sendiri
-            'view-own-profile',       // Lihat profil sendiri
+            // Operational Shift
+            'shift:create',
+            'shift:read',
+            'shift:update',
+            'shift:delete',
 
-            // 🚛 LOGISTICS SPECIFIC - DRIVER / SOPIR
-            'submit-trip-allowance',  // Pengajuan uang jalan / perjalanan kurir-sopir
-            'submit-reimbursement',   // Klaim tol, tambal ban, bensin darurat (struk)
-            'view-own-license',       // Lihat status & expiry SIM sendiri
+            // Leave & Absence Requests
+            'leave:create',
+            'leave:read',
+            'leave:update',
+            'leave:delete',
 
-            // 📦 LOGISTICS SPECIFIC - WAREHOUSE (QC & BONGKAR MUAT)
-            'view-shift-schedule',    // Lihat jadwal shift kerja/roster gudang
-            'submit-shift-exchange',  // Pengajuan tukar shift antar staf gudang
+            // Overtime
+            'overtime:create',
+            'overtime:read',
+            'overtime:update',
+            'overtime:delete',
+
+            // Attendance
+            'attendance:create',
+            'attendance:read',
+            'attendance:update',
+            'attendance:delete',
+
+            // Payroll & Payslips
+            'payroll:create',
+            'payroll:read',
+            'payroll:update',
+            'payroll:delete',
+
+            // Driver Trip Allowance (Uang Jalan)
+            'allowance:create',
+            'allowance:read',
+            'allowance:update',
+            'allowance:delete',
+
+            // Operational Reimbursement
+            'reimbursement:create',
+            'reimbursement:read',
+            'reimbursement:update',
+            'reimbursement:delete',
+
+
         ];
 
         foreach ($permissions as $permission) {
@@ -74,60 +99,80 @@ class PermissionLogistic extends Seeder
         // --- 2. HRD OFFICER ---
         $hrdOfficer = Role::firstOrCreate(['name' => 'hrd-officer']);
         $hrdOfficer->givePermissionTo([
-            'view-employee-data',
-            'edit-employee-data',
-            'create-employee',
-            'delete-employee',
-            'manage-employee',
-
-            'manage-driver-licenses',
-            'manage-shift-schedule',
-
-            'approve-leave',
-            'approve-overtime',
-            'view-performance-review',
-            'view-attendance-report',
+            'employee:create',
+            'employee:read',
+            'employee:update',
+            'employee:delete',
+            'license:create',
+            'license:read',
+            'license:update',
+            'license:delete',
+            'shift:create',
+            'shift:read',
+            'shift:update',
+            'shift:delete',
+            'leave:read',
+            'leave:update',
+            'overtime:read',
+            'overtime:update',
+            'attendance:create',
+            'attendance:read',
+            'attendance:update',
         ]);
 
         // --- 3. FINANCE ---
         $finance = Role::firstOrCreate(['name' => 'finance']);
         $finance->givePermissionTo([
-            'view-employee-data',
-            'manage-payroll',
-            'manage-trip-allowance',
-            'approve-reimbursement',
-            'view-attendance-report',
+            'payroll:create',
+            'payroll:read',
+            'payroll:update',
+            'payroll:delete',
+            'allowance:create',
+            'allowance:read',
+            'allowance:update',
+            'allowance:delete',
+            'reimbursement:create',
+            'reimbursement:read',
+            'reimbursement:update',
+            'reimbursement:delete',
+            'employee:read',
+            'attendance:create',
+            'attendance:read',
         ]);
 
-        // --- 4. EMPLOYEE: DRIVER / SOPIR ---
+        // --- 4. EMPLOYEE: DRIVER ---
         $driver = Role::firstOrCreate(['name' => 'driver']);
         $driver->givePermissionTo([
-            // Common
-            'submit-attendance',
-            'submit-leave',
-            'submit-overtime',
-            'view-own-payslip',
-            'view-own-profile',
-            // Driver Specific
-            'submit-trip-allowance',
-            'submit-reimbursement',
-            'view-own-license',
+            'employee:read',
+            'attendance:create',
+            'attendance:read',
+            'leave:create',
+            'leave:read',
+            'leave:delete',
+            'overtime:create',
+            'overtime:read',
+            'payroll:read',
+            'allowance:create',
+            'allowance:read',
+            'reimbursement:create',
+            'reimbursement:read',
+            'license:read',
         ]);
 
-        // --- 5. EMPLOYEE: WAREHOUSE (GUDANG / QC / BONGKAR MUAT) ---
+        // --- 5. EMPLOYEE: WAREHOUSE ---
         $warehouse = Role::firstOrCreate(['name' => 'warehouse-staff']);
         $warehouse->givePermissionTo([
-            // Common
-            'submit-attendance',
-            'submit-leave',
-            'submit-overtime',
-            'view-own-payslip',
-            'view-own-profile',
-            // Warehouse Specific
-            'view-shift-schedule',
-            'submit-shift-exchange',
-            // Catatan: QC atau Bongkar Muat biasanya tidak perlu fitur reimbursement jalan,
-            // kecuali jika ada kebijakan khusus dari perusahaan.
+            'employee:read',
+            'attendance:create',
+            'attendance:read',
+            'leave:create',
+            'leave:read',
+            'leave:delete',
+            'overtime:create',
+            'overtime:read',
+            'payroll:read',
+            'shift:read',
+            'shift:update',
         ]);
 
         // --- 6. ACCESS DENIED ---
