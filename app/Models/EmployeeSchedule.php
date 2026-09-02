@@ -9,37 +9,32 @@ class EmployeeSchedule extends Model
 {
     use HasFactory;
 
-    /**
-     * Nilai default atribut saat instansiasi model baru
-     */
+    protected $table = 'employee_schedules';
+
     protected $attributes = [
-        'status' => 'pending',
-        'shift_type' => 'pagi',
+        'shift_type'   => 'pagi',
         'total_lembur' => 0.00,
+        'status'       => 'approved',
     ];
 
-    /**
-     * Daftar kolom mass-assignment (Penulisan array datar)
-     */
     protected $fillable = [
         'user_id',
         'tanggal',
         'shift_type',
+        'jam_masuk',
+        'jam_keluar',
         'total_lembur',
         'keterangan_lembur',
         'status',
     ];
 
-    /**
-     * Casting tipe data otomatis
-     */
     protected $casts = [
         'tanggal'      => 'date',
         'total_lembur' => 'decimal:2',
     ];
 
     /**
-     * Relasi ke User (Karyawan)
+     * Relasi ke Karyawan / User
      */
     public function user()
     {

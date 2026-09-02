@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Filament\Resources\OvertimeEmployeeResource\Pages;
+namespace App\Filament\Resources\EmployeeScheduleResource\Pages;
 
-use App\Filament\Resources\OvertimeEmployeeResource;
+use App\Filament\Resources\EmployeeScheduleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
 
-class CreateOvertimeEmployee extends CreateRecord
+class CreateEmployeeSchedule extends CreateRecord
 {
-    protected static string $resource = OvertimeEmployeeResource::class;
+    protected static string $resource = EmployeeScheduleResource::class;
     public function getTitle(): string
     {
         $data['status'] = 'pending';

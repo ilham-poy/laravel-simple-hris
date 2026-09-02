@@ -30,11 +30,12 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Illuminate\Support\HtmlString;
+use App\Models\EmployeeSchedule;
+
 
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
-    //untuk mengatur di bredcump
     protected static ?string $pluralModelLabel = 'Kehadiran';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -52,10 +53,13 @@ class AttendanceResource extends Resource
         if (! Auth::check()) {
             return 'Absent';
         }
-        if (Auth::user()->hasAnyPermission(['manage-roles-and-permissions', 'view-employee-data', 'edit-employee-data'])) {
+        if (Auth::user()->hasAnyPermission(
+            [
+                'attendance:create',
+                'attendance:read',
+            ]
+        )) {
             return 'Manajemen Kehadiran';
-        } elseif (Auth::user()->can('submit-attendance')) {
-            return 'Absen Kehadiran';
         }
     }
 
@@ -63,14 +67,18 @@ class AttendanceResource extends Resource
     public static function canEdit(Model $record): bool
     {
         return Auth::check() && (Auth::user()->can([
-            'manage-roles-and-permissions',
-
+            'attendance:update',
         ]));
     }
 
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::check() && (Auth::user()->can(['attendance:read']));
+    }
     public static function canDelete(Model $record): bool
     {
-        return Auth::check() && (Auth::user()->can(['manage-roles-and-permissions']));
+        return Auth::check() && (Auth::user()->can(['attendance:delete']));
     }
 
     public static function form(Form $form): Form
@@ -91,11 +99,50 @@ class AttendanceResource extends Resource
                             }
                         }
                     )->required(),
-                // ->visible(fn() => !Auth::user()->hasRole('super-admin')),
                 DatePicker::make('tanggal')
+                    ->label('Tanggal Absen / Lembur')
+                    ->default(now())
                     ->required()
-                    ->minDate(today())
-                    ->maxDate(today()),
+                    ->live()
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $userId = $get('user_id') ?? Auth::id();
+
+                        if (!$userId || !$state) {
+                            $set('employee_schedule_id', null);
+                            $set('info_shift', 'Pilih karyawan dan tanggal terlebih dahulu');
+                            return;
+                        }
+
+                        // Cari jadwal shift otomatis dari database
+                        $schedule = EmployeeSchedule::where('user_id', $userId)
+                            ->whereDate('tanggal', $state)
+                            ->first();
+
+                        if ($schedule) {
+                            $shift = ucfirst($schedule->shift_type);
+                            $jam   = $schedule->shift_type !== 'off'
+                                ? "({$schedule->jam_masuk} - {$schedule->jam_keluar})"
+                                : '(OFF)';
+
+                            // Set hidden field ID & tampilkan info visual ke user
+                            $set('employee_schedule_id', $schedule->id);
+                            $set('info_shift', "Shift {$shift} {$jam}");
+                        } else {
+                            $set('employee_schedule_id', null);
+                            $set('info_shift', '⚠️ Jadwal shift belum diplotting oleh HRD untuk tanggal ini');
+                        }
+                    }),
+
+                // 2. Info Shift (Read-only untuk UI visual saja)
+                TextInput::make('info_shift')
+                    ->label('Shift Terdeteksi')
+                    ->disabled()
+                    ->dehydrated(false) // Tidak ikut disave ke DB
+                    ->placeholder('Pilih tanggal untuk memuat shift...'),
+
+                // 3. Foreign Key Hidden (Tersimpan otomatis ke DB)
+                Hidden::make('employee_schedule_id')
+                    ->required("message Shift belum diatur oleh HRD untuk tanggal yang dipilih."),
 
                 TextInput::make('durasi_keterlambatan')->label('Durasi Keterlambatan (Gunakan Satuan Menit)'),
                 Forms\Components\Hidden::make('jam_masuk')
@@ -290,12 +337,13 @@ class AttendanceResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 // Jika Super Admin, tampilkan SEMUA data (tanpa filter)
-                if ($user->hasAnyPermission(['manage-roles-and-permissions', 'view-employee-data'])) {
+                if ($user->hasAnyPermission(['role:read'])) {
                     return $query;
                 }
+                return $query->where('user_id', $user->id);
+
 
                 // Jika BUKAN Super Admin, filter data (misal: hanya data milik user sendiri)
-                return $query->where('user_id', $user->id);
             })
             ->filters([
                 //

@@ -15,11 +15,23 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('tanggal');
+
+            // Detail Shift
             $table->enum('shift_type', ['pagi', 'siang', 'malam', 'off'])->default('pagi');
-            $table->decimal('total_lembur', 4, 2)->default(0.00); // Misal: 2.5 jam
+            $table->time('jam_masuk')->nullable();  // Misal: 08:00:00
+            $table->time('jam_keluar')->nullable(); // Misal: 17:00:00
+
+            // Detail Lembur
+            $table->decimal('total_lembur', 4, 2)->default(0.00); // Dalam satuan jam (misal 2.50)
             $table->text('keterangan_lembur')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+
+            // Status Approval Lembur / Jadwal oleh HRD
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('approved');
+
             $table->timestamps();
+
+            // Memastikan 1 user hanya punya 1 baris jadwal di tanggal yang sama
+            $table->unique(['user_id', 'tanggal']);
         });
     }
 
