@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\EmployeeFinanceResource\Pages;
 
 use App\Filament\Resources\EmployeeFinanceResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -17,38 +16,50 @@ class CreateEmployeeFinance extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'Gaji Karyawan'; // Ganti judul halaman
+        return 'Gaji Karyawan';
     }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $start = Carbon::now()->startOfMonth();
-        $end   = Carbon::now()->endOfMonth();
-        $alpa  = Attendance::where("user_id", $data['user_id'])
-            ->where('status', 'alpha')->where('tanggal', [$start, $end])->count();
+        // Paksa jam_lembur bertipe integer murni
+        $data['jam_lembur'] = (int) ($data['jam_lembur'] ?? 0);
 
-        $total =  $data['gaji_pokok'] + ($data['jam_lembur'] *
-            $data['gaji_lembur']) -  ($data['tidak_masuk'] * $alpa);
+        $workMonth = Carbon::parse($data['work_month']);
+        $start     = $workMonth->copy()->startOfMonth();
+        $end       = $workMonth->copy()->endOfMonth();
 
-        $data['total_gaji'] = $total;
-        // dd($data);
+        $alpa = Attendance::where('user_id', $data['user_id'])
+            ->where('status', 'alpha')
+            ->whereBetween('tanggal', [$start, $end])
+            ->count();
+
+        $total = $data['gaji_pokok']
+            + ($data['jam_lembur'] * $data['gaji_lembur'])
+            - ($data['tidak_masuk'] * $alpa);
+
+        $data['total_gaji'] = max(0, $total);
 
         return $data;
     }
+
     protected function handleRecordCreation(array $data): Model
     {
         try {
             return static::getModel()::create($data);
         } catch (QueryException $e) {
-            if ($e->errorInfo[1] == 1062) {
+            // MySQL Duplicate Entry Code 1062
+            if (isset($e->errorInfo[1]) && $e->errorInfo[1] == 1062) {
                 Notification::make()
                     ->title('Gagal Menyimpan Data')
-                    ->body('Data gaji untuk bulan ini sudah ada.')
+                    ->body('Data gaji karyawan ini untuk bulan yang dipilih sudah ada.')
                     ->danger()
                     ->send();
 
-                // HENTIKAN proses, jangan lempar exception
                 $this->halt();
             }
+
+            // Lempar error jika disebabkan oleh hal lain di luar 1062
+            throw $e;
         }
     }
 }

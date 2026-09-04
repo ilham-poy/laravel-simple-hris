@@ -26,11 +26,11 @@ class EmployeeFinance extends Model
      * Casting tipe data otomatis
      */
     protected $casts = [
-        'gaji_pokok'   => 'decimal:2',
-        'jam_lembur'   => 'decimal:2',
-        'gaji_lembur'  => 'decimal:2',
+        'gaji_pokok'   => 'integer',
+        'jam_lembur'   => 'integer',
+        'gaji_lembur'  => 'integer',
         'tidak_masuk'  => 'integer',
-        'total_gaji'   => 'decimal:2',
+        'total_gaji'   => 'integer',
         'work_month'   => 'date',
         'salary_month' => 'date',
     ];

@@ -13,6 +13,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class AttendanceWidget extends Widget implements HasActions, HasForms
@@ -40,10 +41,11 @@ class AttendanceWidget extends Widget implements HasActions, HasForms
             ->modalHeading('Konfirmasi Presensi')
             ->modalDescription('Lakukan presensi masuk untuk shift hari ini?')
             ->action(function () {
+                $now    = now('Asia/Jakarta');
                 $userId = Auth::id();
-                $today  = now()->toDateString();
+                $today  = $now->toDateString();
 
-                // Cari jadwal shift hari ini di employee_schedules
+                // 1. Cari jadwal shift hari ini
                 $schedule = EmployeeSchedule::where('user_id', $userId)
                     ->whereDate('tanggal', $today)
                     ->first();
@@ -57,7 +59,27 @@ class AttendanceWidget extends Widget implements HasActions, HasForms
                     return;
                 }
 
-                // Cek apakah sudah absen masuk hari ini
+                // 2. Ambil jam masuk shift (Sesuaikan nama kolom/relasi dengan struktur DB kamu)
+                // Contoh jika langsung di tabel schedule: $schedule->jam_masuk
+                // Contoh jika via relasi shift: $schedule->shift->jam_masuk
+                $jamMasukShift = Carbon::parse($today . ' ' . $schedule->jam_masuk, 'Asia/Jakarta');
+
+                // Optional: Tambahkan toleransi keterlambatan (misal 15 menit)
+                // $jamMasukShift = $jamMasukShift->addMinutes(15);
+
+                // 3. Cek apakah jam sekarang sudah melewati jam masuk shift
+                if ($now->greaterThan($jamMasukShift)) {
+                    Notification::make()
+                        ->title('Waktu Masuk Sudah Terlewat')
+                        ->body('Kamu melewati batas jam masuk shift. Silakan isi form absen dengan lengkap.')
+                        ->warning()
+                        ->send();
+
+                    // Lempar / redirect ke halaman form Attendance Resource
+                    return redirect()->to(AttendanceResource::getUrl('create'));
+                }
+
+                // 4. Cek apakah sudah absen masuk hari ini
                 $alreadyAttended = Attendance::where('user_id', $userId)
                     ->whereDate('tanggal', $today)
                     ->exists();
@@ -71,12 +93,12 @@ class AttendanceWidget extends Widget implements HasActions, HasForms
                     return;
                 }
 
-                // Simpan otomatis tanpa isi form
+                // 5. Simpan otomatis jika tepat waktu
                 Attendance::create([
                     'user_id'              => $userId,
                     'employee_schedule_id' => $schedule->id,
                     'tanggal'              => $today,
-                    'jam_masuk'            => now()->format('H:i:s'),
+                    'jam_masuk'            => $now->format('H:i:s'),
                     'status'               => 'hadir',
                 ]);
 

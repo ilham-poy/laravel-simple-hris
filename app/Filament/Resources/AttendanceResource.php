@@ -50,16 +50,21 @@ class AttendanceResource extends Resource
     // untuk mengatur nama resource
     public static function getNavigationLabel(): string
     {
-        if (! Auth::check()) {
-            return 'Absent';
-        }
+
         if (Auth::user()->hasAnyPermission(
+            [
+                'attendance:update',
+                'attendance:delete',
+            ]
+        )) {
+            return 'Manajemen Kehadiran';
+        } elseif (Auth::user()->hasAnyPermission(
             [
                 'attendance:create',
                 'attendance:read',
             ]
         )) {
-            return 'Manajemen Kehadiran';
+            return 'Absen Karyawan';
         }
     }
 
@@ -67,7 +72,7 @@ class AttendanceResource extends Resource
     public static function canEdit(Model $record): bool
     {
         return Auth::check() && (Auth::user()->can([
-            'attendance:update',
+            'role:update',
         ]));
     }
 
@@ -337,7 +342,7 @@ class AttendanceResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 // Jika Super Admin, tampilkan SEMUA data (tanpa filter)
-                if ($user->hasAnyPermission(['role:read'])) {
+                if ($user->hasAnyPermission(['role:read', 'employee:read'])) {
                     return $query;
                 }
                 return $query->where('user_id', $user->id);
@@ -360,7 +365,7 @@ class AttendanceResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->visible(
-                        fn($record): bool => Auth::user()->hasRole('hrd-officer')
+                        fn($record): bool => Auth::user()->can('role:update')
                     ),
 
             ])

@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Models\EmployeeSchedule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +32,19 @@ class EmployeeFinanceResource extends Resource
     protected static ?string $pluralModelLabel = 'Gaji Karyawan';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function calculateTotalSalary(callable $set, callable $get): void
+    {
+        $gajiPokok  = (int) $get('gaji_pokok');
+        $jamLembur  = (int) $get('jam_lembur');
+        $gajiLembur = (int) $get('gaji_lembur');
+        $potongan   = (int) $get('tidak_masuk');
+
+        // Rumus: (Gaji Pokok + (Jam Lembur * Rate Lembur)) - Potongan
+        // Jika 'gaji_lembur' sudah total nominal (bukan rate/jam), hapus perkalian ($jamLembur *)
+        $total = ($gajiPokok + ($jamLembur * $gajiLembur)) - $potongan;
+
+        $set('total_gaji', max(0, $total));
+    }
     // public static function getNavigationLabel(): string
     // {
     //     return 'Gaji Karyawan';
@@ -56,57 +70,55 @@ class EmployeeFinanceResource extends Resource
     {
         return $form
             ->schema([
-
                 Select::make('user_id')
                     ->relationship(
                         name: 'user',
                         titleAttribute: 'name',
-                        modifyQueryUsing: function ($query) {
-                            $query->whereDoesntHave('roles', function ($q) {
-                                $q->where('name', 'super-admin');
-                            });
-
-                            return $query;
-                        }
+                        modifyQueryUsing: fn($query) => $query->whereDoesntHave('roles', function ($q) {
+                            $q->where('name', 'super-admin');
+                        })
                     )
                     ->label('Nama Karyawan')
-                    ->reactive()
-                    //$state merupakan hasil atau data dari inputan, dalam kasus ini maka nilai state id dari user
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $jamLembur = OvertimeEmployee::where('user_id', $state)->sum('total_lembur');
-                        $set('jam_lembur', $jamLembur);
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        $workMonth = $get('work_month');
+                        if ($state && $workMonth) {
+                            $date = Carbon::parse($workMonth);
+                            $jamLembur = EmployeeSchedule::where('user_id', $state)
+                                ->whereYear('tanggal', $date->year)
+                                ->whereMonth('tanggal', $date->month)
+                                ->sum('total_lembur');
+
+                            // Tambahkan (int) agar pasti bulat
+                            $set('jam_lembur', (int) $jamLembur);
+                        }
                     }),
-
-                TextInput::make('gaji_pokok')->label('Gaji Pokok *tidak usah menggunankan titik')->required(),
-
-                TextInput::make('gaji_lembur')->label('Gaji Lembur *tidak usah menggunankan titik')->required(),
-
-                TextInput::make('jam_lembur')
-                    ->numeric()
-                    ->label('Banyak Jam Lembur')
-                    ->disabled()
-                    ->dehydrated(true),
-
-                TextInput::make('tidak_masuk')->label('Pengurangan Gaji Tidak Masuk')->required(),
-
-                Select::make('status_pegawai')
-                    ->options([
-                        'magang' => 'Magang',
-                        'contract' => 'Contract',
-                    ])->label('Status Pegawai')->required(),
 
                 DatePicker::make('work_month')
                     ->label('Bulan Kerja')
                     ->required()
-                    ->reactive()
+                    ->live()
                     ->native(false)
                     ->displayFormat('F Y')
                     ->format('Y-m-d')
                     ->closeOnDateSelection()
-                    ->afterStateUpdated(function ($state, callable $set) {
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         if ($state) {
-                            $salary = \Carbon\Carbon::parse($state)->addMonth()->startOfMonth();
-                            $set('salary_month', $salary);
+                            $salary = Carbon::parse($state)->addMonth()->startOfMonth();
+                            $set('salary_month', $salary->format('Y-m-d'));
+
+                            $userId = $get('user_id');
+                            if ($userId) {
+                                $date = Carbon::parse($state);
+                                $jamLembur = EmployeeSchedule::where('user_id', $userId)
+                                    ->whereYear('tanggal', $date->year)
+                                    ->whereMonth('tanggal', $date->month)
+                                    ->sum('total_lembur');
+
+                                // Tambahkan (int) agar pasti bulat
+                                $set('jam_lembur', (int) $jamLembur);
+                            }
                         }
                     }),
 
@@ -116,11 +128,64 @@ class EmployeeFinanceResource extends Resource
                     ->native(false)
                     ->displayFormat('F Y')
                     ->format('Y-m-d')
+                    ->dehydrated(true)
+                    ->required(),
+
+                TextInput::make('jam_lembur')
+                    ->numeric()
+                    ->label('Banyak Jam Lembur')
+                    ->disabled()
+                    ->default(0)
                     ->dehydrated(true),
 
-                Textarea::make('keterangan')->label('Keterangan'),
+                TextInput::make('gaji_pokok')
+                    ->label('Gaji Pokok')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn(callable $set, callable $get) => self::calculateTotalSalary($set, $get)),
 
+                TextInput::make('gaji_lembur')
+                    ->label('Gaji Lembur (Per Jam / Total)')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->default(0)
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn(callable $set, callable $get) => self::calculateTotalSalary($set, $get)),
 
+                TextInput::make('tidak_masuk')
+                    ->label('Pengurangan Gaji Tidak Masuk')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->default(0)
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn(callable $set, callable $get) => self::calculateTotalSalary($set, $get)),
+
+                // Field total_gaji yang sebelumnya hilang
+                TextInput::make('total_gaji')
+                    ->label('Total Gaji Diterima')
+                    ->numeric()
+                    ->prefix('Rp')
+                    ->readOnly()
+                    ->dehydrated(true)
+                    ->required(),
+
+                Select::make('status_pegawai')
+                    ->options([
+                        'magang'   => 'Magang',
+                        'contract' => 'Contract',
+                        'fulltime' => 'Full Time',
+                    ])
+                    ->default('fulltime')
+                    ->label('Status Pegawai')
+                    ->required(),
+
+                Textarea::make('keterangan')
+                    ->label('Keterangan')
+                    ->columnSpanFull(),
             ]);
     }
 

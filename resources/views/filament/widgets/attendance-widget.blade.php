@@ -21,4 +21,7 @@
             </div>
         </div>
     </x-filament::section>
+
+    {{-- WAJIB: Render container modal action Filament v3 --}}
+    <x-filament-actions::modals />
 </x-filament-widgets::widget>

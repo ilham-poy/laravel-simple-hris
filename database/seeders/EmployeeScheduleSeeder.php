@@ -40,9 +40,9 @@ class EmployeeScheduleSeeder extends Seeder
                 $isSunday = $currentDate->isSunday();
                 $shift    = $isSunday ? 'off' : $assignedShift;
 
-                // Lembur di hari Rabu
-                $isOvertime   = !$isSunday && $currentDate->isWednesday();
-                $totalLembur = $isOvertime ? 2.50 : 0.00;
+                // Lembur di hari Rabu (diset 2 jam penuh, integer)
+                $isOvertime  = !$isSunday && $currentDate->isWednesday();
+                $totalLembur = $isOvertime ? 2 : 0; // <-- Diubah jadi Integer
                 $ketLembur   = $isOvertime ? 'Lembur bongkar muat barang' : null;
 
                 EmployeeSchedule::updateOrCreate(
