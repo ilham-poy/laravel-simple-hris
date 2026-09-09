@@ -20,8 +20,9 @@ class EmployeeScheduleSeeder extends Seeder
             return;
         }
 
-        $startDate = Carbon::now()->startOfMonth();
-        $endDate   = Carbon::now()->endOfMonth();
+        // Set rentang tanggal untuk BULAN SEBELUMNYA
+        $startDate = Carbon::now()->subMonth()->startOfMonth();
+        $endDate   = Carbon::now()->subMonth()->endOfMonth();
 
         // Acuan Jam Kerja per Shift
         $shiftHours = [
@@ -40,9 +41,9 @@ class EmployeeScheduleSeeder extends Seeder
                 $isSunday = $currentDate->isSunday();
                 $shift    = $isSunday ? 'off' : $assignedShift;
 
-                // Lembur di hari Rabu (diset 2 jam penuh, integer)
+                // Lembur di hari Rabu (diset 2 jam penuh)
                 $isOvertime  = !$isSunday && $currentDate->isWednesday();
-                $totalLembur = $isOvertime ? 2 : 0; // <-- Diubah jadi Integer
+                $totalLembur = $isOvertime ? 2 : 0;
                 $ketLembur   = $isOvertime ? 'Lembur bongkar muat barang' : null;
 
                 EmployeeSchedule::updateOrCreate(

@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ManageEmployeeResource extends Resource
 {
     protected static ?string $model = ManageEmployee::class;
-    protected static ?string $pluralModelLabel = 'Manajemen Data Pribadi Karyawan';
+    protected static ?string $pluralModelLabel = 'Data Karyawan';
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -141,22 +141,57 @@ class ManageEmployeeResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('nama_lengkap')->label('Nama Lengkap'),
-                TextColumn::make('email_kantor')->label('Email Kantor'),
-                TextColumn::make('no_hp')->label('Nomor Hp'),
-                TextColumn::make('jenis_kelamin')->label('Jenis Kelamin'),
-                TextColumn::make('alamat')->label('Alamat'),
-            ])
+
+                TextColumn::make('user.name')
+                    ->label('Nama Pegawai')
+                    ->sortable()
+                    ->wrap(),
+
+                TextColumn::make('email_kantor')
+                    ->label('Email Kantor')
+                    ->wrap(),
+
+                TextColumn::make('email_pribadi')
+                    ->label('Email Pribadi')
+                    ->wrap(),
+
+                TextColumn::make('no_hp')
+                    ->label('Nomor Hp')
+                    ->wrap()
+                    ->copyable(),
+
+                TextColumn::make('no_keluarga_1')
+                    ->label('Nomor Keluarga 1')
+                    ->wrap()
+                    ->copyable(),
+
+                TextColumn::make('no_keluarga_2')
+                    ->label('Nomor Keluarga 2')
+                    ->wrap()
+                    ->copyable(),
+
+                TextColumn::make('jenis_kelamin')
+                    ->label('Gender')
+                    ->badge(),
+
+                TextColumn::make('alamat')
+                    ->label('Alamat')
+                    ->limit(50) // biar tidak terlalu panjang
+                    ->tooltip(fn($state) => $state)
+                    ->wrap(),
+
+            ])->modifyQueryUsing(function (Builder $query) {
+                $user = Auth::user();
+                if ($user->hasRole('employee')) {
+                    $query->where('user_id', $user->id);
+                }
+            })
             ->filters([
-                SelectFilter::make('jenis_kelamin')
-                    ->options([
-                        'pria' => 'Pria',
-                        'perempuan' => 'Perempuan',
-                    ])
+                //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

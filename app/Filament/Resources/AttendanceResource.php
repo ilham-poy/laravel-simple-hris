@@ -342,10 +342,11 @@ class AttendanceResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
                 // Jika Super Admin, tampilkan SEMUA data (tanpa filter)
-                if ($user->hasAnyPermission(['role:read', 'employee:read'])) {
+                if ($user->hasAnyPermission(['role:read', 'employee:delete'])) {
                     return $query;
+                } else {
+                    return $query->where('user_id', $user->id);
                 }
-                return $query->where('user_id', $user->id);
 
 
                 // Jika BUKAN Super Admin, filter data (misal: hanya data milik user sendiri)

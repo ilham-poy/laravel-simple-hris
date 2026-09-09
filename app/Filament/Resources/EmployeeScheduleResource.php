@@ -21,48 +21,59 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class EmployeeScheduleResource extends Resource
 {
     protected static ?string $model = EmployeeSchedule::class;
-
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $pluralModelLabel = 'Manajemen Jadwal Karyawan';
 
     public static function getNavigationLabel(): string
     {
-        $user = Auth::user();
-
         return "Manajemen Jadwal Karyawan";
     }
-    // public static function canViewAny(): bool
-    // {
-    //     return  Auth::user()->hasRole('hrd-officer') || Auth::user()->hasRole('employee');
-    // }
 
-    // public static function canCreate(): bool
-    // {
-    //     return Auth::check() && Auth::user()->can('submit-overtime');
-    // }
-    // public static function canEdit(Model $record): bool
-    // {
-    //     return Auth::check() && (Auth::user()->hasRole('hrd-officer') || Auth::user()->hasRole('employee'));
-    // }
+    public static function canCreate(): bool
+    {
+        return Auth::check() && Auth::user()->can('employee:create');
+    }
 
-    // public static function canDelete(Model $record): bool
-    // {
-    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    // }
+    public static function canEdit(Model $record): bool
+    {
+        $shiftDate = \Carbon\Carbon::parse($record->tanggal)->startOfDay();
+        $hMinusOne = \Carbon\Carbon::now()->addDay()->startOfDay();
+        // kalo statusnya sudah approved, maka tidak bisa diubah lagi oleh karyawan
+        if (($record->status === 'approved' || $record->status === 'rejected') && !Auth::user()->can('employee:update')) {
+            return false;
+        }
+        if (Auth::user()->can('employee:update')) {
+            // HRD tetap TIDAK BISA edit jika status sudah Approved DAN sudah memasuki H-1/lewat
+            if (($record->status === 'approved' || $record->status === 'rejected') && $shiftDate <= $hMinusOne) {
+                return false;
+            }
 
+            return true;
+        }
+        return Auth::check() && Auth::user()->can('employee:read');
+    }
 
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::check() && Auth::user()->can('employee:read');
+    }
 
     public static function form(Form $form): Form
     {
         $isHrdOrAdmin = Auth::user()?->hasAnyRole(['super-admin', 'hrd-officer']);
+
         return $form
             ->schema([
                 Section::make('Informasi Karyawan & Shift')
+                    ->description($isHrdOrAdmin ? 'Pengaturan Shift Kerja Karyawan' : 'Shift kerja telah ditentukan oleh HRD')
                     ->schema([
                         // 1. Pilih Karyawan
                         Select::make('user_id')
@@ -71,14 +82,12 @@ class EmployeeScheduleResource extends Resource
                                 name: 'user',
                                 titleAttribute: 'name',
                                 modifyQueryUsing: function ($query) {
-                                    // HRD bisa memilih semua user kecuali Super Admin
                                     if (Auth::user()?->hasRole('hrd-officer')) {
                                         return $query->whereDoesntHave('roles', function ($q) {
                                             $q->where('name', 'super-admin');
                                         });
                                     }
 
-                                    // Karyawan operasional hanya melihat akun sendiri
                                     if (Auth::user()?->hasAnyRole(['driver', 'warehouse-staff'])) {
                                         return $query->where('id', Auth::id());
                                     }
@@ -87,9 +96,16 @@ class EmployeeScheduleResource extends Resource
                                 }
                             )
                             ->default(Auth::id())
-                            ->disabled(!$isHrdOrAdmin) // Karyawan biasa tidak bisa mengganti user_id
+                            ->disabled(!$isHrdOrAdmin) // Hanya HRD/Admin yang bisa memilih karyawan lain
                             ->dehydrated()
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, Get $get, $state) use ($isHrdOrAdmin) {
+                                // Jika yang login Karyawan dan mengubah tanggal/user, cari shift yang sudah diset HRD
+                                if (!$isHrdOrAdmin && $get('tanggal') && $state) {
+                                    static::autoFillShiftData($set, $state, $get('tanggal'));
+                                }
+                            }),
 
                         // 2. Tanggal Shift / Lembur
                         DatePicker::make('tanggal')
@@ -97,9 +113,21 @@ class EmployeeScheduleResource extends Resource
                             ->required()
                             ->default(now())
                             ->afterOrEqual(now()->startOfWeek())
-                            ->beforeOrEqual(now()->addDays(14)),
-
-                        // 3. Jenis Shift (Reaktif)
+                            ->beforeOrEqual(now()->addDays(14))
+                            ->disabled(!$isHrdOrAdmin && fn($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->unique(
+                                table: 'employee_schedules',
+                                column: 'tanggal',
+                                ignorable: fn($record) => $record,
+                                modifyRuleUsing: function ($rule, Get $get) {
+                                    return $rule->where('user_id', $get('user_id'));
+                                }
+                            )
+                            ->validationMessages([
+                                'unique' => 'Jadwal karyawan pada tanggal ini sudah ada dalam sistem.',
+                            ]),
+                        // 3. Jenis Shift (Hanya HRD yang bisa ubah)
                         Select::make('shift_type')
                             ->label('Jenis Shift')
                             ->options([
@@ -110,9 +138,10 @@ class EmployeeScheduleResource extends Resource
                             ])
                             ->default('pagi')
                             ->required()
+                            ->disabled(!$isHrdOrAdmin) // Dikunci jika yang buka Karyawan
+                            ->dehydrated()
                             ->live()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                // Set otomatis jam operasional saat shift dipilih
+                            ->afterStateUpdated(function ($state, Set $set) {
                                 match ($state) {
                                     'pagi'  => ($set('jam_masuk', '08:00:00') && $set('jam_keluar', '16:00:00')),
                                     'siang' => ($set('jam_masuk', '16:00:00') && $set('jam_keluar', '00:00:00')),
@@ -122,23 +151,28 @@ class EmployeeScheduleResource extends Resource
                                 };
                             }),
 
-                        // 4. Jam Operasional Shift
+                        // 4. Jam Operasional Shift (Hanya HRD yang bisa ubah)
                         Grid::make(2)->schema([
                             TimePicker::make('jam_masuk')
                                 ->label('Jam Masuk')
                                 ->default('08:00:00')
-                                ->required(fn($get) => $get('shift_type') !== 'off'),
+                                ->disabled(!$isHrdOrAdmin)
+                                ->dehydrated()
+                                ->required(fn(Get $get) => $get('shift_type') !== 'off'),
 
                             TimePicker::make('jam_keluar')
                                 ->label('Jam Keluar')
                                 ->default('16:00:00')
-                                ->required(fn($get) => $get('shift_type') !== 'off'),
+                                ->disabled(!$isHrdOrAdmin)
+                                ->dehydrated()
+                                ->required(fn(Get $get) => $get('shift_type') !== 'off'),
                         ]),
                     ])->columns(2),
 
-                Section::make('Pengajuan & Detail Lembur')
+                Section::make('Pengajuan & Detail Lembur (Overtime)')
+                    ->description('Bisa diisi oleh Karyawan untuk pengajuan lembur')
                     ->schema([
-                        // 5. Durasi Lembur
+                        // 5. Durasi Lembur (Karyawan & HRD Bebas Mengisi)
                         Select::make('total_lembur')
                             ->label('Durasi Lembur (Jam)')
                             ->options([
@@ -153,7 +187,7 @@ class EmployeeScheduleResource extends Resource
                             ->default('0.00')
                             ->required(),
 
-                        // 6. Status Approval
+                        // 6. Status Approval (Hanya HRD / Admin yang bisa ubah)
                         Select::make('status')
                             ->label('Status Approval')
                             ->options([
@@ -161,12 +195,12 @@ class EmployeeScheduleResource extends Resource
                                 'approved' => 'Approved',
                                 'rejected' => 'Rejected',
                             ])
-                            ->default($isHrdOrAdmin ? 'approved' : 'pending')
-                            ->disabled(!$isHrdOrAdmin) // Hanya HRD/Admin yang bisa merubah status approval
+                            ->default($isHrdOrAdmin ? 'pending' : 'pending')
+                            ->disabled(!$isHrdOrAdmin) // Karyawan mengajukan selalu berstatus Pending
                             ->dehydrated()
                             ->required(),
 
-                        // 7. Keterangan Lembur
+                        // 7. Keterangan Lembur (Karyawan & HRD Bebas Mengisi)
                         Textarea::make('keterangan_lembur')
                             ->label('Alasan / Keterangan Lembur')
                             ->placeholder('Contoh: Bongkar muat barang masuk gudang')
@@ -175,6 +209,21 @@ class EmployeeScheduleResource extends Resource
             ]);
     }
 
+    /**
+     * Helper untuk mengambil data shift yang sudah ditentukan HRD jika Karyawan membuat pengajuan Overtime.
+     */
+    protected static function autoFillShiftData(Set $set, $userId, $tanggal): void
+    {
+        $existingSchedule = EmployeeSchedule::where('user_id', $userId)
+            ->where('tanggal', $tanggal)
+            ->first();
+
+        if ($existingSchedule) {
+            $set('shift_type', $existingSchedule->shift_type);
+            $set('jam_masuk', $existingSchedule->jam_masuk);
+            $set('jam_keluar', $existingSchedule->jam_keluar);
+        }
+    }
 
     public static function table(Table $table): Table
     {
@@ -193,9 +242,9 @@ class EmployeeScheduleResource extends Resource
                 BadgeColumn::make('shift_type')
                     ->label('Shift')
                     ->colors([
-                        'success' => 'pagi',
-                        'warning' => 'siang',
-                        'danger'  => 'malam',
+                        'success'   => 'pagi',
+                        'warning'   => 'siang',
+                        'danger'    => 'malam',
                         'secondary' => 'off',
                     ])
                     ->formatStateUsing(fn(string $state): string => ucfirst($state)),
@@ -228,12 +277,10 @@ class EmployeeScheduleResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
 
-                // HRD & Super Admin bisa melihat seluruh jadwal karyawan
-                if ($user->hasAnyRole(['super-admin', 'hrd-officer'])) {
+                if ($user->can('employee:update')) {
                     return $query;
                 }
 
-                // Employee (Driver/Warehouse) hanya melihat jadwal milik sendiri
                 return $query->where('user_id', $user->id);
             })
             ->filters([
@@ -262,14 +309,12 @@ class EmployeeScheduleResource extends Resource
                         fn($record) =>
                         Auth::check() &&
                             Auth::user()->hasAnyRole(['super-admin', 'hrd-officer']) &&
-                            $record->status === 'pending' &&
-                            $record->total_lembur > 0
+                            $record->status === 'pending'
                     )
                     ->action(function (EmployeeSchedule $record) {
                         $startOfWeek = Carbon::parse($record->tanggal)->startOfWeek();
                         $endOfWeek   = Carbon::parse($record->tanggal)->endOfWeek();
 
-                        // Hitung berapa kali user sudah ACC lembur minggu ini
                         $count = EmployeeSchedule::where('user_id', $record->user_id)
                             ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
                             ->where('status', 'approved')
@@ -277,7 +322,6 @@ class EmployeeScheduleResource extends Resource
                             ->where('id', '!=', $record->id)
                             ->count();
 
-                        // Batasan Maksimal 3x Lembur per Minggu
                         if ($count >= 3) {
                             $record->update(['status' => 'rejected']);
 
@@ -319,9 +363,8 @@ class EmployeeScheduleResource extends Resource
                             ->warning()
                             ->send();
                     }),
-
                 Tables\Actions\EditAction::make()
-                    ->visible(fn() => Auth::user()->hasAnyRole(['super-admin', 'hrd-officer'])),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -333,17 +376,15 @@ class EmployeeScheduleResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEmployeeSchedules::route('/'),
+            'index'  => Pages\ListEmployeeSchedules::route('/'),
             'create' => Pages\CreateEmployeeSchedule::route('/create'),
-            'edit' => Pages\EditEmployeeSchedule::route('/{record}/edit'),
+            'edit'   => Pages\EditEmployeeSchedule::route('/{record}/edit'),
         ];
     }
 }

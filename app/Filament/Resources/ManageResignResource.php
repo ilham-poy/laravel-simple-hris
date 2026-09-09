@@ -24,10 +24,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ManageResignResource extends Resource
 {
     protected static ?string $model = Resign::class;
-    protected static ?string $navigationLabel = 'Manage Resign';
+    protected static ?string $navigationLabel = 'Manajemen Resign';
 
-    protected static ?string $pluralModelLabel = 'Manajemen Resign';
-
+    // protected static ?string $pluralModelLabel = 'Manajemen Resign';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     // public static function getNavigationLabel(): string

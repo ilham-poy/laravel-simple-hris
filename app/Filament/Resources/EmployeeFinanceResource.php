@@ -49,21 +49,39 @@ class EmployeeFinanceResource extends Resource
     // {
     //     return 'Gaji Karyawan';
     // }
-    // public static function canCreate(): bool
-    // {
-    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    // }
+    public static function canCreate(): bool
+    {
+        return Auth::check() && Auth::user()->hasAnyPermission(['payroll:create', 'payroll:delete']);
+    }
 
 
-    // public static function canEdit(Model $record): bool
-    // {
-    //     return Auth::check() && (Auth::user()->hasRole('hrd-officer'));
-    // }
+    public static function canEdit(Model $record): bool
+    {
+        // Payroll & Payslips
+        //     'payroll:create',
+        //     'payroll:read',
+        //     'payroll:update',
+        //     'payroll:delete',
 
-    // public static function canDelete(Model $record): bool
-    // {
-    //     return Auth::check() && Auth::user()->hasRole('hrd-officer');
-    // }
+        // Driver Trip Allowance (Uang Jalan)
+        //     'allowance:create',
+        //     'allowance:read',
+        //     'allowance:update',
+        //     'allowance:delete',
+
+        // Operational Reimbursement
+        //     'reimbursement:create',
+        //     'reimbursement:read',
+        //     'reimbursement:update',
+        //     'reimbursement:delete',
+
+        return Auth::check() && (Auth::user()->hasAnyPermission(['payroll:update']));
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::check() && Auth::user()->hasAnyPermission(['payroll:delete']);
+    }
 
 
     public static function form(Form $form): Form
@@ -204,9 +222,16 @@ class EmployeeFinanceResource extends Resource
                 TextColumn::make('salary_month')->label('Bulan Gajian'),
             ])->modifyQueryUsing(function (Builder $query) {
                 $user = Auth::user();
-                if ($user->hasRole('employee')) {
-                    $query->where('user_id', $user->id);
+                // Jika Super Admin, tampilkan SEMUA data (tanpa filter)
+                if ($user->hasAnyPermission(['role:read', 'payroll:create', 'employee:create'])) {
+                    return $query;
+                } else {
+                    // Jika BUKAN Super Admin, filter data (hanya data milik user sendiri)
+                    return $query->where('user_id', $user->id);
                 }
+
+
+                // Jika BUKAN Super Admin, filter data (misal: hanya data milik user sendiri)
             })
             ->filters([
                 //
