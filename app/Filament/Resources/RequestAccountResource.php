@@ -25,29 +25,41 @@ use Filament\Notifications\Notification;
 class RequestAccountResource extends Resource
 {
     protected static ?string $model = Account::class;
-    protected static ?string $pluralModelLabel = 'Mengajukan Account';
+    // protected static ?string $pluralModelLabel = 'Mengajukan Account';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    // public static function getNavigationLabel(): string
-    // {
-    //     $user = Auth::user();
+    public static function getNavigationLabel(): string
+    {
+        $user = Auth::user();
 
-    //     if ($user->hasRole('hrd-officer')) {
-    //         return "Mengajukan Account";
-    //     } else if ($user->hasRole('super-admin')) {
-    //         return "Persetujuan Account";
-    //     }
-    // }
-    // public static function canViewAny(): bool
-    // {
-    //     $user = Auth::user();
-    //     return $user && ($user->hasRole('hrd-officer') || $user->hasRole('super-admin')) && ($user->can('view-employee-data')
-    //         ||  $user->can('manage-roles-and-permissions'));
-    // }
-    // public static function canEdit(Model $record): bool
-    // {
-    //     return Auth::check() && Auth::user()->can('manage-roles-and-permissions');
-    // }
+        if ($user->can('employee:update')) {
+            return "Mengajukan Account";
+        } else if ($user->can('role:update')) {
+            return "Persetujuan Account";
+        }
+    }
+    public static function canViewAny(): bool
+    {
+        $user = Auth::user();
+
+        if ($user->can('employee:update')) {
+            return "Mengajukan Account";
+        } elseif ($user->can('role:update')) {
+            return "Persetujuan Account";
+        }
+        return false;
+    }
+    public static function canEdit(Model $record): bool
+    {
+        $user = Auth::user();
+
+        if ($user->can('employee:update')) {
+            return "Mengajukan Account";
+        } elseif ($user->can('role:update')) {
+            return "Persetujuan Account";
+        }
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form
@@ -56,19 +68,16 @@ class RequestAccountResource extends Resource
                 TextInput::make('name')->label('Nama Lengkap')->required(),
                 TextInput::make('jabatan')->label('Jabatan & Divisi')->required(),
                 TextInput::make('keterangan')->label('Detail Jobs')->required(),
-                Select::make('status')->options(function () {
-                    if (Auth::user()->hasRole('hrd-officer')) {
+                Select::make('status')->disabled(function () {
+                    if (Auth::user()->can('employee:update')) {
                         return ['pending' => 'Pending'];
                     }
-
-                    if (Auth::user()->hasRole('super-admin')) {
-                        return [
-                            'pending' => 'Pending',
-                            'accept'  => 'Selesai',
-                            'failed'  => 'Gagal',
-                        ];
-                    }
-                })->label('Status')->required()
+                })->label('Status')->required()->default('pending')
+                    ->options([
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                        'pending' => 'Pending',
+                    ]),
             ]);
     }
 
@@ -92,10 +101,10 @@ class RequestAccountResource extends Resource
                 Tables\Actions\EditAction::make()->visible(fn($record) =>
                 Auth::check() &&
                     Auth::user()->hasRole('employee') &&
-                    $record->status !== 'success' && $record->status !== 'failed'),
+                    $record->status !== 'approved' && $record->status !== 'rejected'),
                 Tables\Actions\DeleteAction::make(),
-                Action::make('accept')
-                    ->label('Accept')
+                Action::make('Approve')
+                    ->label('Approved')
                     ->color('success')
                     ->icon('heroicon-o-check')
                     ->requiresConfirmation()
@@ -103,11 +112,11 @@ class RequestAccountResource extends Resource
                         fn($record) =>
                         Auth::check() &&
                             Auth::user()->hasRole('super-admin') &&
-                            $record->status !== 'failed' && $record->status !== 'accept'
+                            $record->status !== 'rejected' && $record->status !== 'approved'
                     )
                     ->action(function ($record) {
 
-                        $record->status = 'accept';
+                        $record->status = 'approved';
                         $record->save();
                         Notification::make()
                             ->title("Account Sudah Selesai Dibuat")
@@ -123,11 +132,11 @@ class RequestAccountResource extends Resource
                         fn($record) =>
                         Auth::check() &&
                             Auth::user()->hasRole('super-admin') &&
-                            $record->status !== 'failed' && $record->status !== 'accept'
+                            $record->status !== 'rejected' && $record->status !== 'approved'
 
                     )
                     ->action(function ($record) {
-                        $record->status = 'failed';
+                        $record->status = 'rejected';
                         $record->save();
                     })
             ])

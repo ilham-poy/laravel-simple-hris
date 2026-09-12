@@ -7,6 +7,7 @@ use App\Filament\Resources\AttendanceResource\RelationManagers;
 use App\Models\Attendance;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Forms;
+use Filament\Tables\Actions\Action;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Storage;
 use Filament\Resources\Resource;
@@ -48,6 +49,46 @@ class AttendanceResource extends Resource
     // * dan yang bisa liat semua data adalah super admin dan hrd-officer,
     //  *sedangkan employee hanya bisa liat data dia sendiri.
     // untuk mengatur nama resource
+
+    // Tambahkan di dalam kelas AttendanceResource
+
+    public static function canCreate(): bool
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // HRD dan Super Admin tetap memiliki akses tanpa batasan jam
+        if ($user->hasAnyRole(['super-admin', 'hrd-officer']) || $user->can('role:update')) {
+            return true;
+        }
+
+        // Ambil jadwal shift karyawan untuk hari ini
+        $todaySchedule = EmployeeSchedule::where('user_id', $user->id)
+            ->whereDate('tanggal', Carbon::today('Asia/Jakarta'))
+            ->where('shift_type', '!=', 'off')
+            ->first();
+
+        // Jika tidak ada shift hari ini / OFF, karyawan biasa tidak bisa buat absen
+        if (!$todaySchedule) {
+            return false;
+        }
+
+        $now = Carbon::now('Asia/Jakarta');
+
+        // FIX ERROR: Pastikan format tanggal hanya Y-m-d (2026-09-11) sebelum digabung dengan jam
+        $dateString = Carbon::parse($todaySchedule->tanggal)->format('Y-m-d');
+        $shiftStart = Carbon::parse($dateString . ' ' . $todaySchedule->jam_masuk, 'Asia/Jakarta');
+
+        $earliestAllowed = $shiftStart->copy()->subHour();   // 1 jam sebelum shift
+        $latestAllowed   = $shiftStart->copy()->addHours(2);  // Maksimal 2 jam setelah shift masuk
+
+        // Karyawan hanya bisa buat absen jika jam sekarang berada di rentang yang diizinkan
+        return $now->between($earliestAllowed, $latestAllowed);
+    }
+
     public static function getNavigationLabel(): string
     {
 
@@ -159,6 +200,7 @@ class AttendanceResource extends Resource
                     ->options([
                         'hadir' => 'Hadir',
                         'izin'  => 'Izin',
+                        'cuti'  => 'Cuti',
                         'sakit' => 'Sakit',
                         'telat' => 'Telat',
                         'alpha' => 'Tidak Hadir',
@@ -166,6 +208,17 @@ class AttendanceResource extends Resource
                     ->label('Status Kehadiran')
                     ->required()
                     ->dehydrated(true),
+                Select::make('validasi')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ])
+                    ->label('Validasi Kehadiran')
+                    ->required()
+                    ->dehydrated(true)
+                    ->default('pending')
+                    ->disabled(fn() => !Auth::user()->hasAnyPermission(['role:update', 'attendance:update'])),
                 Textarea::make('keterangan')->label('Keterangan'),
                 FileUpload::make('lampiran')
                     ->multiple()
@@ -219,7 +272,16 @@ class AttendanceResource extends Resource
                         default => 'gray',
                     })
                     ->sortable(),
+                TextColumn::make('validasi')->label('Validasi Kehadiran')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'pending' => 'warning', // Kuning
+                        'approved' => 'success', // Hijau      
+                        'rejected' => 'danger', // Merah
+                        default => 'gray',
+                    }),
                 TextColumn::make('keterangan')->label('Keterangan')->default('-'),
+
                 TextColumn::make('lampiran')
                     ->label('Lampiran')
                     ->default('Lihat Lampiran')
@@ -364,6 +426,38 @@ class AttendanceResource extends Resource
                     ])
             ])
             ->actions([
+                Action::make('accept')
+                    ->label('Approve')
+                    ->color('success')
+                    ->icon('heroicon-o-check-circle')
+                    ->requiresConfirmation()
+                    ->visible(
+                        fn($record): bool => Auth::user()->hasAnyPermission(['role:update', 'employee:update']) && $record->validasi === 'pending'
+                    )
+                    ->action(function (Attendance $record) {
+                        $record->validasi = 'approved';
+                        $record->save();
+                        Notification::make()
+                            ->title('Presensi Disetujui')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('reject')
+                    ->label('Reject')
+                    ->color('danger')
+                    ->icon('heroicon-o-x-circle')
+                    ->requiresConfirmation()
+                    ->visible(
+                        fn($record): bool => Auth::user()->hasAnyPermission(['role:update', 'employee:update']) && $record->validasi === 'pending'
+                    )
+                    ->action(function (Attendance $record) {
+                        $record->validasi = 'rejected';
+                        $record->save();
+                        Notification::make()
+                            ->title('Presensi Ditolak')
+                            ->danger()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make()
                     ->visible(
                         fn($record): bool => Auth::user()->can('role:update')

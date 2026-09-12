@@ -24,7 +24,8 @@ return new class extends Migration
             $table->time('jam_masuk');
             $table->time('jam_keluar')->nullable(); // Aktifkan ini untuk checkout
 
-            $table->enum('status', ['hadir', 'izin', 'sakit', 'telat', 'alpha'])->default('alpha');
+            $table->enum('status', ['hadir', 'izin', 'cuti', 'sakit', 'telat', 'alpha'])->default('alpha');
+            $table->enum('validasi', ['pending', 'approved', 'rejected'])->default('pending');
 
             // Gunakan menit (integer) agar mudah dihitung oleh Finance saat Payroll
             $table->integer('durasi_keterlambatan_menit')->default(0);

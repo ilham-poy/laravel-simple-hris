@@ -17,20 +17,11 @@ class Resign extends Model
 
     protected $fillable = [
         'user_id',
-        'jenis_pengajuan',
-        'tanggal_mulai',
-        'tanggal_selesai',
-        'total_hari',
-        'alasan',
+        'description',
         'lampiran_surat',
         'status',
     ];
 
-    protected $casts = [
-        'tanggal_mulai'   => 'date',
-        'tanggal_selesai' => 'date',
-        'total_hari'      => 'integer',
-    ];
 
     /**
      * Relasi ke User

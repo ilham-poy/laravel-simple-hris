@@ -3,50 +3,57 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Account;
+use Spatie\Permission\Models\Role;
 
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
-    // protected function afterCreate(): void
-    // {
-    //     $this->record->assignRole($this->form->getState()['role']);
-    // }
+
     public function getTitle(): string
     {
-        return 'Pembuatan User'; // Ganti judul halaman
+        return 'Pembuatan User';
     }
-    protected function afterCreate(): void
-    {
-        $roles = $this->data['roles'] ?? [];
 
-        // Assign multiple roles
-        if (!empty($roles)) {
-            $this->record->assignRole($roles);
-        }
-    }
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // ID account yang dipilih dari Select
-        $accountId = $data['account_name'];
+        // 1. Update status Account
+        $accountId = $data['account_name'] ?? null;
+        if ($accountId) {
+            Account::where('id', $accountId)->update([
+                'status' => 'approved',
+            ]);
 
-        // Update status account menjadi "accept"
-        Account::where('id', $accountId)->update([
-            'status' => 'accept',
-        ]);
+            $account = Account::find($accountId);
+            if ($account) {
+                $data['name'] = $account->name;
+            }
+        }
 
-        // Ambil data account
-        $account = Account::findOrFail($accountId);
-
-        // Set nama user = nama account
-        $data['name'] = $account->name;
-
-        // (Opsional) jika tidak ingin menyimpan account_name ke users
         unset($data['account_name']);
-
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        $roleName = $this->data['role_name'] ?? null;
+        $permissions = $this->data['permissions'] ?? [];
+
+        if ($roleName) {
+            // 2. Cari Role (atau Buat Baru jika belum ada)
+            $role = Role::firstOrCreate(
+                ['name' => $roleName],
+                ['guard_name' => 'web']
+            );
+
+            // 3. Update permission milik role tersebut jika ada yang dicentang
+            if (!empty($permissions)) {
+                $role->permissions()->sync($permissions);
+            }
+
+            // 4. Pasang Role ini ke User baru
+            $this->record->assignRole($role);
+        }
     }
 }

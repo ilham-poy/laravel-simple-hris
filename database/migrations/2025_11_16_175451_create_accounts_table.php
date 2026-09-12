@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('status', ['accept', 'failed', 'pending'])->default('pending');
+            $table->enum('status', ['approved', 'rejected', 'pending'])->default('pending');
             $table->string('jabatan');
             $table->text('keterangan');
             $table->timestamps();

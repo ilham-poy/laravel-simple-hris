@@ -18,6 +18,7 @@ class Attendance extends Model
         'jam_masuk',
         'jam_keluar',
         'status',
+        'validasi',
         'durasi_keterlambatan_menit',
         'foto_masuk',
         'foto_keluar',
